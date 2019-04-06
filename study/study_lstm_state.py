@@ -46,6 +46,8 @@ def learn_stateless(trainX, trainY, testX, testY):
 
     # input shape define the length of input sequence and the number of features per input
     # for example if use 10 sequence of prices from 3 stocks to predict an outcome, then input shape is (10, 3)
+    # stateful=False means we do not use the internal state from one sequence as initial state for next sequence
+    # https://datascience.stackexchange.com/questions/36440/whats-the-difference-of-stateless-lstm-and-a-normal-feed-forward-nn
     model.add(LSTM(output_unit, input_shape=(sequence_len, 1), stateful=False, return_sequences=False))
 
     # we will map output units from LSTM to just one binary outcome
