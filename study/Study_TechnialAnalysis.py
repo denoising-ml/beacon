@@ -1,6 +1,8 @@
 '''
 Technical Analysis
 The code below will calculate most of the well known Technical Indicator on Time Series
+https://code.google.com/archive/p/ultra-finance/
+GitHub Location - https://github.com/panpanpandas/ultrafinance
 '''
 
 import numpy
