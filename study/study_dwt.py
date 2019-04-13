@@ -36,7 +36,7 @@ def dwt_denoise(data, label):
     """
 
     wavelet_coeffs = pywt.wavedec(data, 'haar', level=2)
-    np.savetxt("output/orig_dwt_coeffs_{}.txt".format(label), wavelet_coeffs, fmt='%s')
+    np.savetxt("output/dwt/orig_dwt_coeffs_{}.txt".format(label), wavelet_coeffs, fmt='%s')
 
     # compute threshold using last level of coefficients which mainly consists of noise
     threshold = compute_threshold(wavelet_coeffs[-1], len(data))
@@ -45,7 +45,7 @@ def dwt_denoise(data, label):
         # soft threshold on wavelet coefficients
         threshold_coeffs[i] = pywt.threshold(coeffs, threshold, mode='soft')
 
-    np.savetxt("output/thresholded_dwt_coeffs_{}.txt".format(label), threshold_coeffs, fmt='%s')
+    np.savetxt("output/dwt/thresholded_dwt_coeffs_{}.txt".format(label), threshold_coeffs, fmt='%s')
 
     # reconstruct data using thresholded coefficients
     return pywt.waverec(threshold_coeffs, 'haar')
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     df['low_denoise'] = pd.Series(dwt_denoise(df["low"], "low"), index=df.index)
     df['close_denoise'] = pd.Series(dwt_denoise(df["close"], "close"), index=df.index)
 
-    df.to_csv('output/dwt_output.csv', sep=',')
+    df.to_csv('output/dwt/dwt_output.csv', sep=',')
 
 
 

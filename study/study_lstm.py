@@ -3,9 +3,9 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
+from keras import regularizers
 from sklearn.model_selection import train_test_split
 from matplotlib import pyplot
-
 from tensorflow import set_random_seed
 
 set_random_seed(20190410)
@@ -19,9 +19,7 @@ def model(x_train, y_train):
     Build a many-to-one LSTM model
     Args
 
-
     Returns
-
 
     """
     assert y_train.ndim == 1
@@ -31,10 +29,17 @@ def model(x_train, y_train):
     input_shape = (x_shape[1], x_shape[2])
 
     _model = Sequential()
-    _model.add(LSTM(10, input_shape=input_shape, return_sequences=False, activation='relu'))
-    _model.add(Dense(1))
+
+    _model.add(LSTM(units=10,
+                    input_shape=input_shape,
+                    activation='relu'))
+
+    _model.add((Dense(1)))
+
     _model.compile(loss="mean_squared_error", optimizer="adam", metrics=['mse', 'mae', 'mape'])
-    _model.fit(x_train, y_train, epochs=1000, batch_size=50)
+
+    # fit model
+    _model.fit(x_train, y_train, epochs=800, batch_size=50)
 
     return _model
 
@@ -71,12 +76,11 @@ def performance(y_test, y_predict):
     predict_direction = np.sign(y_predict[1:] - y_test[0:-1])
     correct_direction = actual_direction * predict_direction
     correct_count = (correct_direction > 0).sum()
-    n = len(actual_direction)
-    accuracy = correct_count / n
+    accuracy = correct_count / len(actual_direction)
 
-    print("total prediction = {}".format(n))
-    print("correct count = {} ".format(correct_count))
-    print("accuracy = {} ".format(accuracy))
+    print("total prediction = {}".format(len(actual_direction)))
+    print("correctness = {} ".format(correct_count))
+    print("accuracy = {}".format(accuracy))
 
     return accuracy
 
@@ -101,7 +105,7 @@ if __name__ == "__main__":
     x_train_raw, x_test_raw, y_train_raw, y_test_raw = train_test_split(x, y, train_size=0.8, shuffle=False)
 
     # shape data
-    time_step = 2
+    time_step = 3
     sliding_step = 1
     x_train, y_train = shape_data(x_train_raw, y_train_raw, time_step, sliding_step)
     x_test, y_test = shape_data(x_test_raw, y_test_raw, time_step, sliding_step)
@@ -120,15 +124,10 @@ if __name__ == "__main__":
     # pyplot.show()
 
     prediction = model.predict(x_test)
-    print(prediction.shape)
-
     prediction = prediction.reshape(-1)
-    print(prediction.shape)
+    performance(y_test, prediction)
 
     pyplot.plot(y_test, label="Actual")
     pyplot.plot(prediction, label="Prediction")
     pyplot.legend()
     pyplot.show()
-
-    performance(y_test, prediction)
-
