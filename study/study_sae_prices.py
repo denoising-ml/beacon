@@ -1,8 +1,8 @@
 import pandas as pd
-from keras.layers import Input, LSTM, Dense
+from keras.layers import Input, Dense
 from keras.models import Model
 from keras.optimizers import SGD
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
 
@@ -27,7 +27,7 @@ def sae(train_x, validate_x, hidden_dimensions):
         last_decoded_layer = Dense(hidden_dim, activation='relu')(last_decoded_layer)
 
     # output layer
-    last_decoded_layer = Dense(n_features, activation='linear')(last_decoded_layer)
+    last_decoded_layer = Dense(n_features, activation='relu')(last_decoded_layer)
 
     # autoencoder model
     autoencoder = Model(input=input_dim, output=last_decoded_layer)
@@ -41,7 +41,7 @@ def sae(train_x, validate_x, hidden_dimensions):
     # configure and fit the model
     autoencoder.fit(train_x,
                     train_x,
-                    epochs=500,
+                    epochs=1000,
                     batch_size=50,
                     shuffle=False,
                     validation_data=(validate_x, validate_x))
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     df_data = df_data.loc[:, ['Closing Price', 'Open Price', 'High price', 'Low Price']]
 
     # scale the data
-    scaler = StandardScaler()
+    scaler = MinMaxScaler()
 
     scaler.fit(df_data)
     df_data_scaled = scaler.transform(df_data)
