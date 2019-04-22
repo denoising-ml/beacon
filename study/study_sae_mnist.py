@@ -33,7 +33,7 @@ if __name__ == "__main__":
     print(training_xs.shape)
     print(training_ys.shape)
 
-    autoencoder, encoder = sae(training_xs, validation_xs, [32], loss="binary_crossentropy")
+    autoencoder, encoder = sae(training_xs, validation_xs, [32], loss="binary_crossentropy", optimizer="adam")
 
     test_xs, test_ys = mnist.train.next_batch(10)
     decoded_imgs = autoencoder.predict(test_xs)

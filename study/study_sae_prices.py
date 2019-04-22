@@ -4,6 +4,7 @@ from keras.models import Model
 from keras.optimizers import SGD
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 
 def sae(train_x,
@@ -11,7 +12,6 @@ def sae(train_x,
         hidden_dimensions,
         optimizer="adadelta",
         loss="mean_squared_error"):
-
     assert train_x.ndim == 2
     assert validate_x.ndim == 2
     assert validate_x.shape[1] == train_x.shape[1]
@@ -75,7 +75,7 @@ def sae(train_x,
 if __name__ == "__main__":
     df_data = pd.read_csv('../data/input/HSI_figshare.csv')
     df_data = df_data.drop(['Date', 'Time'], axis=1)
-    df_data = df_data.loc[:, ['Closing Price', 'Open Price', 'High price', 'Low Price']]
+    # df_data = df_data.loc[:, ['Closing Price', 'Open Price', 'High price', 'Low Price']]
 
     # scale the data
     scaler = MinMaxScaler()
@@ -84,29 +84,48 @@ if __name__ == "__main__":
     df_data_scaled = scaler.transform(df_data)
 
     # Split Data
-    X_train, X_test = train_test_split(df_data_scaled, train_size=0.75, shuffle=False)
+    X_train, X_test = train_test_split(df_data, train_size=0.75, shuffle=False)
+    X_train_scaled, X_test_scaled = train_test_split(df_data_scaled, train_size=0.75, shuffle=False)
 
-    wv_train = pd.DataFrame(X_train, index=None)
+    wv_train = pd.DataFrame(X_train_scaled, index=None)
     wv_train.to_csv("output/encoder/scaled_train_data.csv")
 
-    wv_test = pd.DataFrame(X_test)
+    wv_test = pd.DataFrame(X_test_scaled)
     wv_test.to_csv("output/encoder/scaled_test_data.csv")
 
-    df_data.iloc[len(X_train):, :].to_csv("output/encoder/orig_test_data.csv")
+    df_data.iloc[len(X_train_scaled):, :].to_csv("output/encoder/orig_test_data.csv")
 
-    autoencoder, encoder = sae(X_train, X_test, [4, 4, 2])
+    structures = [
+        [8],
+        [16],
+        [16, 8],
+        [16, 12, 8]
+    ]
 
-    X_predict_scaled = autoencoder.predict(X_test)
-    X_predict = scaler.inverse_transform(X_predict_scaled)
-    pd.DataFrame(autoencoder.predict(X_predict)).to_csv("output/encoder/predict_test_data.csv")
+    df_X_test_scaled = pd.DataFrame(data=X_test_scaled)
+    df_display = df_X_test_scaled.iloc[:, [0]]
+    df_display.columns = ['X_test_close']
+
+    for index, structure in enumerate(structures):
+        autoencoder, encoder = sae(X_train_scaled, X_test_scaled, structure)
+
+        Y_test_scaled = autoencoder.predict(X_test_scaled)
+        Y_test = scaler.inverse_transform(Y_test_scaled)
+
+        df_Y_test_scaled = pd.DataFrame(data=Y_test_scaled)
+        df_display['Y_test_close ' + str(structure)] = df_Y_test_scaled.iloc[:, 0]
+
+    df_display.plot()
+    plt.show()
+
+    pd.DataFrame(autoencoder.predict(Y_test)).to_csv("output/encoder/predict_test_data.csv")
 
     # serialize model to JSON
     model_json = autoencoder.to_json()
     with open("output/encoder/price_model.json", "w") as json_file:
         json_file.write(model_json)
 
-    # serialize weights to HDF5
+        # serialize weights to HDF5
         autoencoder.save_weights("output/encoder/price_model.h5")
 
     print("Saved model to disk")
-
