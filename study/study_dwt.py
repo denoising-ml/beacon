@@ -72,9 +72,19 @@ if __name__ == "__main__":
     A serially correlated series can be modeled as AR or MA process.
     If the errors still contain serial correlation, then some information is missed in the denoise series. 
     '''
+    print("Close price errors analysis")
+    print("===========================")
     close_errors = df["close"] - df['close_denoise']
     summarise(close_errors, lags=20)
     visualise(close_errors)
+
+    print("Close price analysis")
+    print("====================")
+    summarise(df["close"])
+
+    print("Denoised close price analysis")
+    summarise(df["close_denoise"])
+
 
 
 
