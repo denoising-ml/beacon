@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from statsmodels import robust
 import math
-
+from study_noise import visualise, summarise
 
 def compute_threshold(coeffs, L):
     """
@@ -35,10 +35,13 @@ def dwt_denoise(data, label):
 
     """
 
+    # The components of the decomposition are divided into the approximation (a) and details (d) at different levels
+    # Approximation represents the major feature of the signal and the details describe the detailed changes and noise.
     wavelet_coeffs = pywt.wavedec(data, 'haar', level=2)
     np.savetxt("output/dwt/orig_dwt_coeffs_{}.txt".format(label), wavelet_coeffs, fmt='%s')
 
-    # compute threshold using last level of coefficients which mainly consists of noise
+    # The time series can be denoised by removing some coefficients from the projections in details.
+    # Compute threshold using last level of coefficients
     threshold = compute_threshold(wavelet_coeffs[-1], len(data))
     threshold_coeffs = [None] * len(wavelet_coeffs)
     for (i, coeffs) in enumerate(wavelet_coeffs):
@@ -61,6 +64,18 @@ if __name__ == "__main__":
     df['close_denoise'] = pd.Series(dwt_denoise(df["close"], "close"), index=df.index)
 
     df.to_csv('output/dwt/dwt_output.csv', sep=',')
+
+    '''
+    Two types of noise: white noise (constant power spanning all frequencies) and 
+    colored noise (different power at different bands).
+    One way to check quality of denoise is to test if the errors are serially correlated or not.
+    A serially correlated series can be modeled as AR or MA process.
+    If the errors still contain serial correlation, then some information is missed in the denoise series. 
+    '''
+    close_errors = df["close"] - df['close_denoise']
+    summarise(close_errors, lags=20)
+    visualise(close_errors)
+
 
 
 
