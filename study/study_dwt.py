@@ -83,6 +83,7 @@ if __name__ == "__main__":
     summarise(df["close"])
 
     print("Denoised close price analysis")
+    print("=============================")
     summarise(df["close_denoise"])
 
 

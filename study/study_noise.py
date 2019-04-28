@@ -57,6 +57,8 @@ def summarise(_series, lags=50):
     print("Data statistics")
     print(_series.describe())
 
+    print("Skewness = {}".format(_series.skew()))
+
     print("Autocorrelation coefficients")
     print(calc_acf(_series, lags=lags))
 
