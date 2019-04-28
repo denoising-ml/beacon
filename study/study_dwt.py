@@ -5,7 +5,7 @@ from statsmodels import robust
 import math
 from study_noise import visualise, summarise
 
-def compute_threshold(coeffs, L):
+def compute_threshold(coeffs):
     """
     Compute threshold using VisuShrink approach which employs a single universal threshold to all
     wavelet detail coefficients, as proposed by Donoho and Johnstone
@@ -19,7 +19,7 @@ def compute_threshold(coeffs, L):
 
     """
     sigma = robust.mad(coeffs) * 1.4826
-    return sigma * math.sqrt(2 * math.log(L))
+    return sigma * math.sqrt(2 * math.log(len(coeffs)))
 
 
 def dwt_denoise(data, label):
@@ -42,7 +42,7 @@ def dwt_denoise(data, label):
 
     # The time series can be denoised by removing some coefficients from the projections in details.
     # Compute threshold using last level of coefficients
-    threshold = compute_threshold(wavelet_coeffs[-1], len(data))
+    threshold = compute_threshold(wavelet_coeffs[-1])
     threshold_coeffs = [None] * len(wavelet_coeffs)
     for (i, coeffs) in enumerate(wavelet_coeffs):
         # soft threshold on wavelet coefficients
