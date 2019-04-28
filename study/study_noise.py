@@ -7,6 +7,7 @@ from statsmodels.tsa.stattools import acf, pacf
 from pandas.plotting import lag_plot
 from matplotlib import pyplot
 import nolds
+from scipy import stats
 
 def visualise(_series):
     fig, axes = pyplot.subplots(nrows=2, ncols=3)
@@ -55,9 +56,7 @@ def calc_aproxEntropy(y, N=2, r=0.2):
 def summarise(_series, lags=50):
 
     print("Data statistics")
-    print(_series.describe())
-
-    print("Skewness = {}".format(_series.skew()))
+    print(stats.describe(_series))
 
     print("Autocorrelation coefficients")
     print(calc_acf(_series, lags=lags))
@@ -65,8 +64,7 @@ def summarise(_series, lags=50):
     print("Partial-autocorrelation coefficients")
     print(calc_pacf(_series, lags=lags))
 
-    print("Sample approximate entropy")
-    print(calc_aproxEntropy(_series))
+    print("Sample approximate entropy = {}".format(calc_aproxEntropy(_series)))
 
 
 if __name__ == "__main__":
