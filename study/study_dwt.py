@@ -37,7 +37,7 @@ def dwt_denoise(data, label):
 
     # The components of the decomposition are divided into the approximation (a) and details (d) at different levels
     # Approximation represents the major feature of the signal and the details describe the detailed changes and noise.
-    wavelet_coeffs = pywt.wavedec(data, 'haar', level=2)
+    wavelet_coeffs = pywt.wavedec(data, 'haar', level=4)
     np.savetxt("output/dwt/orig_dwt_coeffs_{}.txt".format(label), wavelet_coeffs, fmt='%s')
 
     # The time series can be denoised by removing some coefficients from the projections in details.
@@ -46,7 +46,7 @@ def dwt_denoise(data, label):
     threshold_coeffs = [None] * len(wavelet_coeffs)
     for (i, coeffs) in enumerate(wavelet_coeffs):
         # soft threshold on wavelet coefficients
-        threshold_coeffs[i] = pywt.threshold(coeffs, threshold, mode='soft')
+        threshold_coeffs[i] = pywt.threshold(coeffs, threshold, mode='hard')
 
     np.savetxt("output/dwt/thresholded_dwt_coeffs_{}.txt".format(label), threshold_coeffs, fmt='%s')
 
