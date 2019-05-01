@@ -11,7 +11,8 @@ def sae(train_x,
         validate_x,
         hidden_dimensions,
         optimizer="adadelta",
-        loss="mean_squared_error"):
+        loss="mean_squared_error",
+        epochs=1000):
     assert train_x.ndim == 2
     assert validate_x.ndim == 2
     assert validate_x.shape[1] == train_x.shape[1]
@@ -44,7 +45,7 @@ def sae(train_x,
     # configure and fit the model
     autoencoder.fit(train_x,
                     train_x,
-                    epochs=1000,
+                    epochs=epochs,
                     batch_size=50,
                     shuffle=False,
                     validation_data=(validate_x, validate_x))
@@ -70,6 +71,21 @@ def sae(train_x,
     decoded_test.to_csv("output/encoder/decoded_validate_data.csv")
 
     return autoencoder, encoder
+
+
+def plot_loss(model):
+    # training loss
+    loss = model.history.history['loss']
+
+    # validation loss
+    val_loss = model.history.history['val_loss']
+
+    plt.figure()
+    plt.plot(range(len(loss)), loss, 'bo', label='Training loss')
+    plt.plot(range(len(val_loss)), val_loss, 'r+', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.legend()
+    plt.show()
 
 
 if __name__ == "__main__":

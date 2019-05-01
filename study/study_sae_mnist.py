@@ -1,6 +1,6 @@
 from tensorflow.examples.tutorials.mnist import input_data
 import matplotlib.pyplot as plt
-from study_sae_prices import sae
+from study_sae_prices import sae, plot_loss
 
 
 def display(images1, images2):
@@ -28,12 +28,14 @@ if __name__ == "__main__":
     mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
     training_xs, training_ys = mnist.train.next_batch(1000)
-    validation_xs, validation_ys = mnist.train.next_batch(100)
+    validation_xs, validation_ys = mnist.train.next_batch(200)
 
     print(training_xs.shape)
     print(training_ys.shape)
 
-    autoencoder, encoder = sae(training_xs, validation_xs, [32], loss="binary_crossentropy", optimizer="adam")
+    autoencoder, encoder = sae(training_xs, validation_xs, [32], loss="binary_crossentropy", optimizer="adam", epochs=500)
+
+    plot_loss(autoencoder)
 
     test_xs, test_ys = mnist.train.next_batch(10)
     decoded_imgs = autoencoder.predict(test_xs)
