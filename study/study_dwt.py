@@ -51,7 +51,7 @@ def dwt_denoise(data, label):
     np.savetxt("output/dwt/thresholded_dwt_coeffs_{}.txt".format(label), threshold_coeffs, fmt='%s')
 
     # reconstruct data using thresholded coefficients
-    denoised_data = pywt.waverec(wavelet_coeffs, 'haar')
+    denoised_data = pywt.waverec(threshold_coeffs, 'haar')
     np.savetxt("output/dwt/denoise_{}.txt".format(label), denoised_data, fmt='%s')
 
     return denoised_data
