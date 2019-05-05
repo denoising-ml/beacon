@@ -51,12 +51,26 @@ def dwt_denoise(data, label):
     np.savetxt("output/dwt/thresholded_dwt_coeffs_{}.txt".format(label), threshold_coeffs, fmt='%s')
 
     # reconstruct data using thresholded coefficients
-    return pywt.waverec(threshold_coeffs, 'haar')
+    denoised_data = pywt.waverec(wavelet_coeffs, 'haar')
+    np.savetxt("output/dwt/denoise_{}.txt".format(label), denoised_data, fmt='%s')
+
+    return denoised_data
+
+
+def study_JPM():
+    date_parser = lambda x: pd.to_datetime(x, format='%d/%m/%Y', errors='coerce')
+    _df = pd.read_csv('JPM.csv', parse_dates=['date'], date_parser=date_parser, index_col=0)
+    return _df
+
+
+def study_HSI():
+    date_parser = lambda x: pd.to_datetime(x, format='%Y%m%d', errors='coerce')
+    _df = pd.read_csv('../data/input/HSI_figshare.csv', parse_dates=['date'], date_parser=date_parser, index_col=0)
+    return _df
 
 
 if __name__ == "__main__":
-    date_parser = lambda x: pd.to_datetime(x, format='%d/%m/%Y', errors='coerce')
-    df = pd.read_csv('JPM.csv', parse_dates=['date'], date_parser=date_parser, index_col=0)
+    df = study_HSI()
 
     df['open_denoise'] = pd.Series(dwt_denoise(df["open"], "open"), index=df.index)
     df['high_denoise'] = pd.Series(dwt_denoise(df["high"], "high"), index=df.index)

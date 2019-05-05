@@ -33,7 +33,12 @@ if __name__ == "__main__":
     print(training_xs.shape)
     print(training_ys.shape)
 
-    autoencoder, encoder = sae(training_xs, validation_xs, [32], loss="binary_crossentropy", optimizer="adam", epochs=500)
+    autoencoder, encoder = sae(training_xs,
+                               validation_xs,
+                               [128, 64, 32],
+                               loss="binary_crossentropy",
+                               optimizer="adam",
+                               epochs=500)
 
     plot_loss(autoencoder)
 

@@ -12,7 +12,8 @@ def sae(train_x,
         hidden_dimensions,
         optimizer="adadelta",
         loss="mean_squared_error",
-        epochs=1000):
+        epochs=1000,
+        last_activation="sigmoid"):
     assert train_x.ndim == 2
     assert validate_x.ndim == 2
     assert validate_x.shape[1] == train_x.shape[1]
@@ -32,7 +33,7 @@ def sae(train_x,
         last_decoded_layer = Dense(hidden_dim, activation='relu')(last_decoded_layer)
 
     # output layer
-    last_decoded_layer = Dense(n_features, activation='sigmoid')(last_decoded_layer)
+    last_decoded_layer = Dense(n_features, activation=last_activation)(last_decoded_layer)
 
     # autoencoder model
     autoencoder = Model(input=input_dim, output=last_decoded_layer)
