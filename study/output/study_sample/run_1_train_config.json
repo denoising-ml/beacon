@@ -1,0 +1,1 @@
+{"dwt_layer": {"dwt_levels": 4, "dwt_mode": "hard"}, "sae_layer": {"hidden_dim": [16, 8, 8], "epochs": 500}, "lstm_layer": {"epochs": 500}, "pre_backtrader_layer": {}, "backtrader_layer": {}}
