@@ -145,6 +145,14 @@ def run_study(
                       test_denoise_file=filenames.test_dwt_denoised,
                       denoise_columns=['close', 'open', 'high', 'low'])
 
+    # Prepare LSTM label data using denoised close
+    denoised_train = pd.read_csv(filenames.train_dwt_denoised)
+    denoised_test = pd.read_csv(filenames.test_dwt_denoised)
+    lstm_train_label = denoised_train['close']
+    lstm_test_label = denoised_test['close']
+    pd.DataFrame(lstm_train_label).to_csv(filenames.train_lstm_label)
+    pd.DataFrame(lstm_test_label).to_csv(filenames.test_lstm_label)
+
     # SAE layer
     sae_config = config['sae_layer']
 
@@ -156,10 +164,6 @@ def run_study(
                           test_encoder_file=filenames.test_sae_encoder,
                           test_decoder_file=filenames.test_sae_decoder,
                           loss_plot_file=filenames.sae_loss_plot)
-
-    # Prepare LSTM expected data
-    pd.DataFrame(y_train).to_csv(filenames.train_lstm_label)
-    pd.DataFrame(y_test).to_csv(filenames.test_lstm_label)
 
     # LSTM layer
     lstm_config = config['lstm_layer']

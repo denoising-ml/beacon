@@ -103,10 +103,10 @@ def fit_predict(
     df_in_test = pd.read_csv(test_in_file, index_col=0).values
     df_expected_test = pd.read_csv(test_expected_file, index_col=0).values
 
-    print('In train: {} {}'.format(train_in_file, df_in_train.shape))
-    print('Expected train: {} {}'.format(train_expected_file, df_expected_train.shape))
-    print('In test: {} {}'.format(test_in_file, df_in_test.shape))
-    print('Expected test: {} {}'.format(test_expected_file, df_expected_test.shape))
+    print('[Train Set] Input: {} {}'.format(train_in_file, df_in_train.shape))
+    print('[Train Set] Label: {} {}'.format(train_expected_file, df_expected_train.shape))
+    print('[Test Set] Input: {} {}'.format(test_in_file, df_in_test.shape))
+    print('[Test Set] Label: {} {}'.format(test_expected_file, df_expected_test.shape))
     print('Config: {}'.format(config))
 
     # shape data
