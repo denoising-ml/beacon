@@ -1,9 +1,7 @@
 import json
 import os
 from datetime import datetime
-
 from sklearn.model_selection import train_test_split
-
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
@@ -42,19 +40,27 @@ class StudyFilenames:
         self.train_input = self.get_train_filename('input')
         self.test_input = self.get_test_filename('input')
 
+        # DWT denoised output
         self.train_dwt_denoised = self.get_train_filename('dwt_denoised')
         self.test_dwt_denoised = self.get_test_filename('dwt_denoised')
 
-        self.train_sae_predicted = self.get_train_filename('sae_predicted')
-        self.test_sae_predicted = self.get_test_filename('sae_predicted')
+        # SAE encoder output
+        self.train_sae_encoder = self.get_train_filename('sae_encoder')
+        self.test_sae_encoder = self.get_test_filename('sae_encoder')
+
+        # SAE decoder output
+        self.train_sae_decoder = self.get_train_filename('sae_decoder')
+        self.test_sae_decoder = self.get_test_filename('sae_decoder')
 
         self.sae_loss_plot = self.get_filename('plot', 'sae_loss', 'png')
 
-        self.train_lstm_expected = self.get_train_filename('lstm_expected')
-        self.test_lstm_expected = self.get_test_filename('lstm_expected')
+        # LSTM label
+        self.train_lstm_label = self.get_train_filename('lstm_label')
+        self.test_lstm_label = self.get_test_filename('lstm_label')
 
-        self.train_lstm_predicted = self.get_train_filename('lstm_predicted')
-        self.test_lstm_predicted = self.get_test_filename('lstm_predicted')
+        # LSTM prediction
+        self.train_lstm_predict = self.get_train_filename('lstm_predict')
+        self.test_lstm_predict = self.get_test_filename('lstm_predict')
 
         self.backtrader_mktdata = self.get_filename('backtrader', 'mktdata')
 
@@ -144,32 +150,34 @@ def run_study(
 
     sae_layer.fit_predict(config=sae_config,
                           train_in_file=filenames.train_dwt_denoised,
-                          train_predicted_file=filenames.train_sae_predicted,
+                          train_encoder_file=filenames.train_sae_encoder,
+                          train_decoder_file=filenames.train_sae_decoder,
                           test_in_file=filenames.test_dwt_denoised,
-                          test_predicted_file=filenames.test_sae_predicted,
+                          test_encoder_file=filenames.test_sae_encoder,
+                          test_decoder_file=filenames.test_sae_decoder,
                           loss_plot_file=filenames.sae_loss_plot)
 
     # Prepare LSTM expected data
-    pd.DataFrame(y_train).to_csv(filenames.train_lstm_expected)
-    pd.DataFrame(y_test).to_csv(filenames.test_lstm_expected)
+    pd.DataFrame(y_train).to_csv(filenames.train_lstm_label)
+    pd.DataFrame(y_test).to_csv(filenames.test_lstm_label)
 
     # LSTM layer
     lstm_config = config['lstm_layer']
 
     lstm_layer.fit_predict(config=lstm_config,
-                           train_in_file=filenames.train_sae_predicted,
-                           train_expected_file=filenames.train_lstm_expected,
-                           train_predicted_file=filenames.train_lstm_predicted,
-                           test_in_file=filenames.test_sae_predicted,
-                           test_expected_file=filenames.test_lstm_expected,
-                           test_predicted_file=filenames.test_lstm_predicted)
+                           train_in_file=filenames.train_sae_encoder,
+                           train_expected_file=filenames.train_lstm_label,
+                           train_predicted_file=filenames.train_lstm_predict,
+                           test_in_file=filenames.test_sae_encoder,
+                           test_expected_file=filenames.test_lstm_label,
+                           test_predicted_file=filenames.test_lstm_predict)
 
     pre_backtrader_config = config['pre_backtrader_layer']
 
     pre_backtrader_layer.create_trading_file(config=pre_backtrader_config,
                                              test_dates_file=filenames.test_dates,
                                              test_input_file=filenames.test_input,
-                                             test_predicted_file=filenames.test_lstm_predicted,
+                                             test_predicted_file=filenames.test_lstm_predict,
                                              backtrader_mkt_data_file=filenames.backtrader_mktdata)
 
     backtrader_config = config['backtrader_layer']
@@ -181,8 +189,8 @@ def run_study(
 
     # Plot graphs for manual visual verification
     df_in_test_data = pd.read_csv(filenames.test_input)
-    df_expected_test_data = pd.read_csv(filenames.test_lstm_expected)
-    df_predicted_test_data = pd.read_csv(filenames.test_lstm_predicted)
+    df_expected_test_data = pd.read_csv(filenames.test_lstm_label)
+    df_predicted_test_data = pd.read_csv(filenames.test_lstm_predict)
 
     df_display = df_in_test_data.iloc[:, [1]].copy()
     df_display.columns = ['in']

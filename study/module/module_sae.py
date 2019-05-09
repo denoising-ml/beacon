@@ -56,9 +56,11 @@ def sae(train_x,
 def fit_predict(
         config: Dict,
         train_in_file: str,
-        train_predicted_file: str,
+        train_encoder_file: str,
+        train_decoder_file: str,
         test_in_file: str,
-        test_predicted_file: str,
+        test_encoder_file: str,
+        test_decoder_file: str,
         loss_plot_file: str = None
 ):
     print('------------------ SAE Start --------------------')
@@ -71,6 +73,7 @@ def fit_predict(
 
     apply_scaler = config.get('scaler', True)
 
+    # normalize data if required
     if apply_scaler:
         scaler = MinMaxScaler()
 
@@ -89,19 +92,31 @@ def fit_predict(
                                epochs=epochs,
                                hidden_dimensions=hidden_dim)
 
-    out_train_scaled = autoencoder.predict(df_in_train_scaled)
-    out_test_scaled = autoencoder.predict(df_in_test_scaled)
+    # get decoder output
+    out_decoder_train_scaled = autoencoder.predict(df_in_train_scaled)
+    out_decoder_test_scaled = autoencoder.predict(df_in_test_scaled)
 
+    # de-normalize decoder output if required
     if apply_scaler:
-        out_train = scaler.inverse_transform(out_train_scaled)
-        out_test = scaler.inverse_transform(out_test_scaled)
+        out_train = scaler.inverse_transform(out_decoder_train_scaled)
+        out_test = scaler.inverse_transform(out_decoder_test_scaled)
     else:
-        out_train = out_train_scaled
-        out_test = out_test_scaled
+        out_train = out_decoder_train_scaled
+        out_test = out_decoder_test_scaled
 
-    pd.DataFrame(out_train).to_csv(train_predicted_file)
-    pd.DataFrame(out_test).to_csv(test_predicted_file)
+    # save decoder output
+    pd.DataFrame(out_train).to_csv(train_decoder_file)
+    pd.DataFrame(out_test).to_csv(test_decoder_file)
 
+    # get encoder output
+    out_encoder_train = encoder.predict(df_in_train_scaled)
+    out_encoder_test = encoder.predict(df_in_test_scaled)
+
+    # save encoder output
+    pd.DataFrame(out_encoder_train).to_csv(train_encoder_file)
+    pd.DataFrame(out_encoder_test).to_csv(test_encoder_file)
+
+    # save loss
     if loss_plot_file is not None:
         plot_loss(autoencoder, loss_plot_file)
 
