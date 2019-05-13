@@ -28,7 +28,7 @@ class StudyFilenames:
         self.study_number = study_number
 
         # Create dir is not exist
-        self.directory = 'c:/temp/beacon/study_{}'.format(study_number)
+        self.directory = 'c:/temp/beacon/study_{}/run_{}'.format(study_number, run_number)
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
 
@@ -97,11 +97,7 @@ def generate_config(
     return config
 
 
-def run_study(
-        config,
-        run_number,
-        study_number
-):
+def run_study(config, run_number, study_number):
     matplotlib.use('Agg')
 
     filenames = StudyFilenames(run_number, study_number)
