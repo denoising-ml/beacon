@@ -4,6 +4,7 @@ import numpy as np
 from statsmodels import robust
 import math
 from study_noise import visualise, summarise
+import study.module.module_datasets as datasets
 
 
 def trim_coefficients(wavelet_coeffs):
@@ -78,20 +79,8 @@ def dwt_denoise(data, label, level=4, rounds=1):
     return data
 
 
-def study_JPM():
-    date_parser = lambda x: pd.to_datetime(x, format='%d/%m/%Y', errors='coerce')
-    _df = pd.read_csv('JPM.csv', parse_dates=['date'], date_parser=date_parser, index_col=0)
-    return _df
-
-
-def study_HSI():
-    date_parser = lambda x: pd.to_datetime(x, format='%Y%m%d', errors='coerce')
-    _df = pd.read_csv('../data/input/HSI_figshare.csv', parse_dates=['date'], date_parser=date_parser, index_col=0)
-    return _df
-
-
 if __name__ == "__main__":
-    df = study_HSI()
+    df = datasets.load_HSI()
 
     df['open_denoise'] = pd.Series(dwt_denoise(df["open"], level=2, label="open", rounds=2), index=df.index)
     df['high_denoise'] = pd.Series(dwt_denoise(df["high"], level=2, label="high", rounds=2), index=df.index)
