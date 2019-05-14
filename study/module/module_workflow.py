@@ -145,68 +145,86 @@ def study_hsi(config, run_number, study_number):
 
 
 def start(_config, filenames):
-    matplotlib.use('Agg')
 
     # DWT layer
+    run_dwt(_config, filenames)
+
+    # SAE layer
+    run_sae(_config, filenames)
+
+    # LSTM layer
+    run_lstm(_config, filenames)
+
+    # trading performance
+    run_backtrader(_config, filenames)
+
+
+def run_dwt(_config, _filenames):
     dwt_config = _config['dwt_layer']
 
     dwt_layer.denoise(config=dwt_config,
-                      train_in_file=filenames.train_input,
-                      train_denoise_file=filenames.train_dwt_denoised,
-                      test_in_file=filenames.test_input,
-                      test_denoise_file=filenames.test_dwt_denoised,
+                      train_in_file=_filenames.train_input,
+                      train_denoise_file=_filenames.train_dwt_denoised,
+                      test_in_file=_filenames.test_input,
+                      test_denoise_file=_filenames.test_dwt_denoised,
                       denoise_columns=['close', 'open', 'high', 'low'])
 
     # Prepare LSTM label data using denoised close
-    denoised_train = pd.read_csv(filenames.train_dwt_denoised)
-    denoised_test = pd.read_csv(filenames.test_dwt_denoised)
+    denoised_train = pd.read_csv(_filenames.train_dwt_denoised)
+    denoised_test = pd.read_csv(_filenames.test_dwt_denoised)
     lstm_train_label = denoised_train['close']
     lstm_test_label = denoised_test['close']
-    pd.DataFrame(lstm_train_label).to_csv(filenames.train_lstm_label)
-    pd.DataFrame(lstm_test_label).to_csv(filenames.test_lstm_label)
+    pd.DataFrame(lstm_train_label).to_csv(_filenames.train_lstm_label)
+    pd.DataFrame(lstm_test_label).to_csv(_filenames.test_lstm_label)
 
-    # SAE layer
+
+def run_sae(_config, _filenames):
     sae_config = _config['sae_layer']
 
     sae_layer.fit_predict(config=sae_config,
-                          train_in_file=filenames.train_dwt_denoised,
-                          train_encoder_file=filenames.train_sae_encoder,
-                          train_decoder_file=filenames.train_sae_decoder,
-                          test_in_file=filenames.test_dwt_denoised,
-                          test_encoder_file=filenames.test_sae_encoder,
-                          test_decoder_file=filenames.test_sae_decoder,
-                          loss_plot_file=filenames.sae_loss_plot)
+                          train_in_file=_filenames.train_dwt_denoised,
+                          train_encoder_file=_filenames.train_sae_encoder,
+                          train_decoder_file=_filenames.train_sae_decoder,
+                          test_in_file=_filenames.test_dwt_denoised,
+                          test_encoder_file=_filenames.test_sae_encoder,
+                          test_decoder_file=_filenames.test_sae_decoder,
+                          loss_plot_file=_filenames.sae_loss_plot)
 
-    # LSTM layer
+
+def run_lstm(_config, _filenames):
     lstm_config = _config['lstm_layer']
 
     lstm_layer.fit_predict(config=lstm_config,
-                           train_in_file=filenames.train_sae_encoder,
-                           train_expected_file=filenames.train_lstm_label,
-                           train_predicted_file=filenames.train_lstm_predict,
-                           test_in_file=filenames.test_sae_encoder,
-                           test_expected_file=filenames.test_lstm_label,
-                           test_predicted_file=filenames.test_lstm_predict)
+                           train_in_file=_filenames.train_sae_encoder,
+                           train_expected_file=_filenames.train_lstm_label,
+                           train_predicted_file=_filenames.train_lstm_predict,
+                           test_in_file=_filenames.test_sae_encoder,
+                           test_expected_file=_filenames.test_lstm_label,
+                           test_predicted_file=_filenames.test_lstm_predict)
+
+
+def run_backtrader(_config, _filenames):
+    matplotlib.use('Agg')
 
     pre_backtrader_config = _config['pre_backtrader_layer']
 
     pre_backtrader_layer.create_trading_file(config=pre_backtrader_config,
-                                             test_dates_file=filenames.test_dates,
-                                             test_input_file=filenames.test_input,
-                                             test_predicted_file=filenames.test_lstm_predict,
-                                             backtrader_mkt_data_file=filenames.backtrader_mktdata)
+                                             test_dates_file=_filenames.test_dates,
+                                             test_input_file=_filenames.test_input,
+                                             test_predicted_file=_filenames.test_lstm_predict,
+                                             backtrader_mkt_data_file=_filenames.backtrader_mktdata)
 
     backtrader_config = _config['backtrader_layer']
 
     backtrader_layer.run_backtrader(config=backtrader_config,
-                                    backtrader_mkt_data_file=filenames.backtrader_mktdata,
-                                    backtrader_plot_file=filenames.plot_backtrader,
-                                    pyfolio_plot_file=filenames.plot_pyfolio)
+                                    backtrader_mkt_data_file=_filenames.backtrader_mktdata,
+                                    backtrader_plot_file=_filenames.plot_backtrader,
+                                    pyfolio_plot_file=_filenames.plot_pyfolio)
 
     # Plot graphs for manual visual verification
-    df_in_test_data = pd.read_csv(filenames.test_input)
-    df_expected_test_data = pd.read_csv(filenames.test_lstm_label)
-    df_predicted_test_data = pd.read_csv(filenames.test_lstm_predict)
+    df_in_test_data = pd.read_csv(_filenames.test_input)
+    df_expected_test_data = pd.read_csv(_filenames.test_lstm_label)
+    df_predicted_test_data = pd.read_csv(_filenames.test_lstm_predict)
 
     df_display = df_in_test_data.iloc[:, [1]].copy()
     df_display.columns = ['in']
@@ -216,4 +234,4 @@ def start(_config, filenames):
     df_display.plot()
     # plt.show()
 
-    plt.gcf().savefig(filenames.plot_accuracy)
+    plt.gcf().savefig(_filenames.plot_accuracy)
