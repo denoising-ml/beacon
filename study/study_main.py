@@ -1,6 +1,4 @@
-
 from datetime import datetime
-
 import study.module.module_workflow as workflow
 
 
@@ -21,4 +19,4 @@ if __name__ == "__main__":
             sae_hidden_dim=hidden_layer
         )
         run_number += 1
-        workflow.run_study(config=config, run_number=run_number, study_number=study_number)
+        workflow.study_hsi(config=config, run_number=run_number, study_number=study_number)

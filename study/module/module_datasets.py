@@ -19,4 +19,5 @@ def load_HSI():
 
 if __name__ == "__main__":
     df = load_HSI()
-    df = load_JPM()
+    print(df.loc['2008-8-1':'2008-8-31'])
+

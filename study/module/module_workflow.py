@@ -96,42 +96,59 @@ def generate_config(
     return config
 
 
-def run_study(config, run_number, study_number):
-    matplotlib.use('Agg')
-
-    filenames = StudyFilenames(run_number, study_number)
+def study_hsi(config, run_number, study_number):
+    _filenames = StudyFilenames(run_number, study_number)
 
     # Save config
-    with open(filenames.config, 'w') as outfile:
+    with open(_filenames.config, 'w') as outfile:
         json.dump(config, outfile)
 
     # Load raw data
     df_raw_data = pd.read_csv('../data/input/HSI_figshare.csv')
+
+    # make a copy of date column
     df_dates = df_raw_data['date'].copy()
+
+    # remove date column from input data
     df_raw_data = df_raw_data.drop(['date', 'time'], axis=1)
 
     # Today's input data is used to predict tomorrow's close.
-    # Prepare the data.
-    raw_close = df_raw_data.loc[:, "close"]
-
-    raw_close = raw_close.iloc[1:]
+    # Inputs          | Label
+    # =============================
+    # data[0]...     | close[1]
+    # data[1]...     | close[2]
+    # ...
+    # data[T-1]...   | close[T]
+    #
+    # The inputs, data[0] .. data[T-1]
     df_dates = df_dates.iloc[:-1]
     df_raw_input = df_raw_data.iloc[:-1]
 
+    # The label, close[1] .. close[T]
+    label_close = df_raw_data.loc[:, "close"]
+    label_close = label_close.iloc[1:]
+
     # Split train and test data
-    x_train, x_test, y_train, y_test = train_test_split(df_raw_input, raw_close, train_size=0.75, shuffle=False)
+    x_train, x_test, y_train, y_test = train_test_split(df_raw_input, label_close, train_size=0.75, shuffle=False)
     dates_train, dates_test = train_test_split(df_dates, train_size=0.75, shuffle=False)
 
     # Prepare dates index file
-    pd.DataFrame(dates_train).to_csv(filenames.train_dates)
-    pd.DataFrame(dates_test).to_csv(filenames.test_dates)
+    pd.DataFrame(dates_train).to_csv(_filenames.train_dates)
+    pd.DataFrame(dates_test).to_csv(_filenames.test_dates)
 
     # Prepare input files
-    pd.DataFrame(x_train).to_csv(filenames.train_input)
-    pd.DataFrame(x_test).to_csv(filenames.test_input)
+    pd.DataFrame(x_train).to_csv(_filenames.train_input)
+    pd.DataFrame(x_test).to_csv(_filenames.test_input)
+
+    # study
+    start(config, _filenames)
+
+
+def start(_config, filenames):
+    matplotlib.use('Agg')
 
     # DWT layer
-    dwt_config = config['dwt_layer']
+    dwt_config = _config['dwt_layer']
 
     dwt_layer.denoise(config=dwt_config,
                       train_in_file=filenames.train_input,
@@ -149,7 +166,7 @@ def run_study(config, run_number, study_number):
     pd.DataFrame(lstm_test_label).to_csv(filenames.test_lstm_label)
 
     # SAE layer
-    sae_config = config['sae_layer']
+    sae_config = _config['sae_layer']
 
     sae_layer.fit_predict(config=sae_config,
                           train_in_file=filenames.train_dwt_denoised,
@@ -161,7 +178,7 @@ def run_study(config, run_number, study_number):
                           loss_plot_file=filenames.sae_loss_plot)
 
     # LSTM layer
-    lstm_config = config['lstm_layer']
+    lstm_config = _config['lstm_layer']
 
     lstm_layer.fit_predict(config=lstm_config,
                            train_in_file=filenames.train_sae_encoder,
@@ -171,7 +188,7 @@ def run_study(config, run_number, study_number):
                            test_expected_file=filenames.test_lstm_label,
                            test_predicted_file=filenames.test_lstm_predict)
 
-    pre_backtrader_config = config['pre_backtrader_layer']
+    pre_backtrader_config = _config['pre_backtrader_layer']
 
     pre_backtrader_layer.create_trading_file(config=pre_backtrader_config,
                                              test_dates_file=filenames.test_dates,
@@ -179,7 +196,7 @@ def run_study(config, run_number, study_number):
                                              test_predicted_file=filenames.test_lstm_predict,
                                              backtrader_mkt_data_file=filenames.backtrader_mktdata)
 
-    backtrader_config = config['backtrader_layer']
+    backtrader_config = _config['backtrader_layer']
 
     backtrader_layer.run_backtrader(config=backtrader_config,
                                     backtrader_mkt_data_file=filenames.backtrader_mktdata,
