@@ -43,6 +43,10 @@ class StudyFilenames:
         self.train_dwt_denoised = self.get_train_filename('dwt_denoised')
         self.test_dwt_denoised = self.get_test_filename('dwt_denoised')
 
+        # DWT original denoised output
+        self.train_dwt_denoised_orig = self.get_train_filename('dwt_denoised_orig')
+        self.test_dwt_denoised_orig = self.get_test_filename('dwt_denoised_orig')
+
         # SAE encoder output
         self.train_sae_encoder = self.get_train_filename('sae_encoder')
         self.test_sae_encoder = self.get_test_filename('sae_encoder')
@@ -94,6 +98,25 @@ def generate_config(
     }
 
     return config
+
+
+def prepare_label(dataframe):
+    # Today's input data is used to predict tomorrow's close.
+    # Inputs          | Label
+    # =============================
+    # data[0]...     | close[1]
+    # data[1]...     | close[2]
+    # ...
+    # data[T-1]...   | close[T]
+
+    # The inputs, data[0] .. data[T-1]
+    df_input = dataframe.iloc[:-1]
+
+    # The label, close[1] .. close[T]
+    df_label = dataframe.loc[:, "close"]
+    df_label = df_label.iloc[1:]
+
+    return df_input, df_label
 
 
 def study_hsi(config, run_number, study_number):
@@ -172,10 +195,19 @@ def run_dwt(_config, _filenames):
     # Prepare LSTM label data using denoised close
     denoised_train = pd.read_csv(_filenames.train_dwt_denoised)
     denoised_test = pd.read_csv(_filenames.test_dwt_denoised)
-    lstm_train_label = denoised_train['close']
-    lstm_test_label = denoised_test['close']
-    pd.DataFrame(lstm_train_label).to_csv(_filenames.train_lstm_label)
-    pd.DataFrame(lstm_test_label).to_csv(_filenames.test_lstm_label)
+
+    # make a copy
+    denoised_train.to_csv(_filenames.train_dwt_denoised_orig, index=False)
+    denoised_test.to_csv(_filenames.test_dwt_denoised_orig)
+
+    x_train, y_train = prepare_label(denoised_train)
+    x_test, y_test = prepare_label(denoised_test)
+
+    x_train.to_csv(_filenames.train_dwt_denoised, index=False)
+    pd.DataFrame(y_train).to_csv(_filenames.train_lstm_label)
+
+    x_test.to_csv(_filenames.test_dwt_denoised, index=False)
+    pd.DataFrame(y_test).to_csv(_filenames.test_lstm_label)
 
 
 def run_sae(_config, _filenames):
