@@ -60,8 +60,10 @@ def denoise(
         train_denoise_file: str,
         test_in_file: str,
         test_denoise_file: str,
-        denoise_columns: List = None
-):
+        denoise_columns: List = None):
+
+    assert denoise_columns is not None
+
     print('------------------ DWT Start -------------------')
     df_in_train = pd.read_csv(train_in_file, index_col=0)
     df_in_test = pd.read_csv(test_in_file, index_col=0)
@@ -70,40 +72,39 @@ def denoise(
     print('In test: {} {}'.format(test_in_file, df_in_test.shape))
     print('Config: {}'.format(config))
 
+    # sanity checks
+    assert (df_in_train.shape[0] % 2 == 0), "Number of training rows must be even"
+    assert (df_in_test.shape[0] % 2 == 0), "Number of testing rows must be even"
+
     levels = config.get('dwt_levels', 4)
     mode = config.get('dwt_mode', 'hard')
 
-    df_denoise_train = pd.DataFrame()
-    for column in df_in_train.columns:
-        if denoise_columns is not None and column in denoise_columns:
+    df_denoise_train = denoise_dataframe(df_in_train, denoise_columns, levels, mode)
 
-            denoised = pd.Series(dwt_denoise(data=df_in_train[column],
-                                             label=column,
-                                             levels=levels,
-                                             mode=mode))
-
-            df_denoise_train[column] = denoised
-        else:
-            df_denoise_train[column] = df_in_train[column].copy()
-
-    df_denoise_test = pd.DataFrame()
-    for column in df_in_test.columns:
-        if denoise_columns is not None and column in denoise_columns:
-            denoised = pd.Series(dwt_denoise(data=df_in_test[column],
-                                             label=column,
-                                             levels=levels,
-                                             mode=mode))
-            if denoised.size > df_in_test[column].size:
-                denoised = denoised[:-1]
-
-            df_denoise_test[column] = denoised
-        else:
-            df_denoise_test[column] = pd.Series(df_in_test[column].values)
+    df_denoise_test = denoise_dataframe(df_in_test, denoise_columns, levels, mode)
 
     print('Denoise train: {} {}'.format(train_denoise_file, df_denoise_train.shape))
     print('Denoise test: {} {}'.format(test_denoise_file, df_denoise_test.shape))
     df_denoise_train.to_csv(train_denoise_file)
     df_denoise_test.to_csv(test_denoise_file)
+
+
+def denoise_dataframe(_df, _work_columns, _levels, _mode):
+    # create an empty data frame
+    _df_target = pd.DataFrame()
+
+    for column in _df.columns:
+        if column in _work_columns:
+            series = pd.Series(dwt_denoise(data=_df[column],
+                                           label=column,
+                                           levels=_levels,
+                                           mode=_mode))
+
+            _df_target = pd.concat([_df_target, series.rename(column)], axis=1)
+        else:
+            _df_target[column] = pd.Series(_df[column].values)
+
+    return _df_target
 
 
 if __name__ == "__main__":

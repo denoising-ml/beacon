@@ -135,35 +135,26 @@ def study_hsi(config, run_number, study_number):
     # remove date column from input data
     df_raw_data = df_raw_data.drop(['date', 'time'], axis=1)
 
-    # Today's input data is used to predict tomorrow's close.
-    # Inputs          | Label
-    # =============================
-    # data[0]...     | close[1]
-    # data[1]...     | close[2]
-    # ...
-    # data[T-1]...   | close[T]
-    #
-    # The inputs, data[0] .. data[T-1]
-    df_dates = df_dates.iloc[:-1]
-    df_raw_input = df_raw_data.iloc[:-1]
-
-    # The label, close[1] .. close[T]
-    label_close = df_raw_data.loc[:, "close"]
-    label_close = label_close.iloc[1:]
+    # we split using an explicit index to ensure the data sets contain even rows
+    split_index = 1526
 
     # Split train and test data
-    x_train, x_test, y_train, y_test = train_test_split(df_raw_input, label_close, train_size=0.75, shuffle=False)
-    dates_train, dates_test = train_test_split(df_dates, train_size=0.75, shuffle=False)
+    x_train = df_raw_data.iloc[0:split_index, :]
+    x_test = df_raw_data.iloc[split_index:, :]
 
-    # Prepare dates index file
-    pd.DataFrame(dates_train).to_csv(_filenames.train_dates)
-    pd.DataFrame(dates_test).to_csv(_filenames.test_dates)
-
-    # Prepare input files
+    # Save input files
     pd.DataFrame(x_train).to_csv(_filenames.train_input)
     pd.DataFrame(x_test).to_csv(_filenames.test_input)
 
-    # study
+    # Split train and test dates
+    dates_train = df_dates[0:split_index]
+    dates_test = df_dates[split_index:]
+
+    # Save dates index file
+    pd.DataFrame(dates_train).to_csv(_filenames.train_dates)
+    pd.DataFrame(dates_test).to_csv(_filenames.test_dates)
+
+    # Study
     start(config, _filenames)
 
 

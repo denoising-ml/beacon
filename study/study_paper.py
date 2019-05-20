@@ -6,25 +6,6 @@ import study.module.module_datasets as datasets
 import pandas as pd
 
 
-def prepare_label(dataframe):
-    # Today's input data is used to predict tomorrow's close.
-    # Inputs          | Label
-    # =============================
-    # data[0]...     | close[1]
-    # data[1]...     | close[2]
-    # ...
-    # data[T-1]...   | close[T]
-
-    # The inputs, data[0] .. data[T-1]
-    df_input = dataframe.iloc[:-1]
-
-    # The label, close[1] .. close[T]
-    df_label = dataframe.loc[:, "close"]
-    df_label = df_label.iloc[1:]
-
-    return df_input, df_label
-
-
 def run(_filenames, _start_date, training_years, validation_months, test_months):
 
     training_start_date = _start_date
@@ -45,26 +26,35 @@ def run(_filenames, _start_date, training_years, validation_months, test_months)
     data_validation = df[validation_start_date: validation_end_date]
     data_test = df[test_start_date: test_end_date]
 
-    x_train, y_train = prepare_label(data_train)
-    x_validate, y_validate = prepare_label(data_validation)
-    x_test, y_test = prepare_label(data_test)
-
     print("Training period: {} - {}".format(training_start_date, training_end_date))
-    print("Training x[{}], label[{}]".format(x_train.shape, y_train.shape))
 
     print("Validation period: {} - {}".format(validation_start_date, validation_end_date))
-    print("Validation x[{}], label[{}]".format(x_validate.shape, y_validate.shape))
 
     print("Test period: {} - {}".format(test_start_date, test_end_date))
-    print("Test x[{}], label[{}]".format(x_test.shape, y_test.shape))
 
-    # Prepare dates index file
-    #pd.DataFrame(dates_train).to_csv(_filenames.train_dates)
-    #pd.DataFrame(dates_test).to_csv(_filenames.test_dates)
+    # remove first row if not even
+    data_train = make_even_rows(data_train)
+    data_validation = make_even_rows(data_validation)
+    data_test = make_even_rows(data_test)
 
-    # Prepare input files
-    pd.DataFrame(x_train).to_csv(_filenames.train_input)
-    pd.DataFrame(x_test).to_csv(_filenames.test_input)
+    # Save input files
+    pd.DataFrame(data_train).to_csv(_filenames.train_input)
+    pd.DataFrame(data_test).to_csv(_filenames.test_input)
+
+    # Save dates index files
+    dates_train = data_train.index
+    dates_test = data_test.index
+    pd.DataFrame(dates_train).to_csv(_filenames.train_dates)
+    pd.DataFrame(dates_test).to_csv(_filenames.test_dates)
+
+    # Study
+    workflow.start(config, _filenames)
+
+
+def make_even_rows(_df):
+    if _df.shape[0] % 2 != 0:
+        _df = _df.iloc[1:]
+    return _df
 
 
 if __name__ == "__main__":
@@ -72,9 +62,10 @@ if __name__ == "__main__":
 
     start_date = datetime(2008, 7, 1)
 
+    study_number = datetime.now().strftime('%Y%m%d_%H%M%S')
+
     for i in range(24):
         print('run_{}'.format(i))
-        study_number = datetime.now().strftime('%Y%m%d_%H%M%S')
 
         filenames = workflow.StudyFilenames(i, study_number)
 
