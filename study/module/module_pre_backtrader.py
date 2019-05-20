@@ -22,7 +22,7 @@ def create_trading_file(
     print('Predicted test: {} {}'.format(test_predicted_file, df_predicted_test.shape))
     print('Config: {}'.format(config))
 
-    # LSTM only starts predicting from the 3rd tick. 3 being the number of nodes.
+    # LSTM only starts predicting from the 3rd tick. 3 being the number of time steps.
     lstm_lag = df_input_test.shape[0] - df_predicted_test.shape[0]
     df_dates_test = df_dates_test.iloc[lstm_lag:]
     df_input_test = df_input_test.iloc[lstm_lag:]
@@ -47,6 +47,7 @@ def create_trading_file(
     )
 
     df_backtrader['signal'] = df_trading['signal'].copy()
+    df_backtrader['predict'] = df_trading['predicted'].copy()
     df_backtrader.to_csv(backtrader_mkt_data_file)
 
     print('------------------ Pre-Backtrader End -------------------')
