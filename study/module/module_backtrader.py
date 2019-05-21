@@ -78,7 +78,9 @@ def run_backtrader(
     df_mktdata = pd.read_csv(backtrader_mkt_data_file, index_col=0, parse_dates=['datetime'], date_parser=date_parser)
 
     print('Mkt Data: {} {}'.format(backtrader_mkt_data_file, df_mktdata.shape))
-    print('Config: {}'.format(config))
+
+    if config is not None:
+        print('Config: {}'.format(config))
 
     # Run backtrader
     cerebro = bt.Cerebro()

@@ -27,7 +27,9 @@ class StudyFilenames:
         self.study_number = study_number
 
         # Create dir is not exist
-        self.directory = 'c:/temp/beacon/study_{}/run_{}'.format(study_number, run_number)
+        self.root = 'c:/temp/beacon/study_{}'.format(study_number)
+
+        self.directory = self.root + '/run_{}'.format(run_number)
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
 

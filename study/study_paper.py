@@ -3,6 +3,7 @@ import study.module.module_datasets as datasets
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import study.module.module_datasets as datasets
+import study.module.module_backtrader as backtrader
 import pandas as pd
 
 
@@ -64,7 +65,11 @@ if __name__ == "__main__":
 
     study_number = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-    for i in range(24):
+    runs = 3
+
+    trading_files = [None] * runs
+
+    for i in range(runs):
         print('run_{}'.format(i))
 
         filenames = workflow.StudyFilenames(i, study_number)
@@ -72,8 +77,25 @@ if __name__ == "__main__":
         run(filenames, start_date, 2, 3, 3)
         start_date = start_date + relativedelta(months=+3)
 
+        # collect file name of backtrader market data file
+        trading_files[i] = filenames.backtrader_mktdata
 
+    # concatenate all market data files into one
+    i = 0
+    master_file = filenames.root + '/master_trades.csv'
+    with open(master_file, 'w') as outfile:
+        for fname in trading_files:
+            with open(fname) as infile:
+                # only take header from first file, skip header for the rest
+                if i > 0:
+                    next(infile)
+                i = i + 1
 
+                for line in infile:
+                    outfile.write(line)
 
-
-
+    # calculate overall performance
+    backtrader.run_backtrader(None,
+                              master_file,
+                              filenames.root + '/master_backtrader.pdf',
+                              filenames.root + '/master_pyfolio.pdf')
