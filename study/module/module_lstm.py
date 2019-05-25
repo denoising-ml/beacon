@@ -16,7 +16,8 @@ from numpy.random import seed
 seed(20190410)
 
 
-def lstm_model(x_train, y_train, epochs):
+def lstm_model(x_train, y_train, cell_neurons, epochs, batch_size):
+
     """
     Build a many-to-one LSTM model
     Args
@@ -31,7 +32,7 @@ def lstm_model(x_train, y_train, epochs):
     input_shape = (x_shape[1], x_shape[2])
 
     _model = Sequential()
-    _model.add(LSTM(units=10,
+    _model.add(LSTM(units=cell_neurons,
                     input_shape=input_shape,
                     activation='relu'))
     _model.add((Dense(1)))
@@ -43,7 +44,7 @@ def lstm_model(x_train, y_train, epochs):
     _model.fit(x_train,
                y_train,
                epochs=epochs,
-               batch_size=50)
+               batch_size=batch_size)
 
     return _model
 
@@ -122,8 +123,10 @@ def fit_predict(
     print("y_test = {}".format(expected_test.shape))
 
     # build model
+    cell_neurons = config.get('cell_neurons', 5)
     epochs = config.get('epochs', 800)
-    model = lstm_model(x_train=in_train, y_train=expected_train, epochs=epochs)
+    batch_size = config.get('batch_size', 60)
+    model = lstm_model(x_train=in_train, y_train=expected_train, cell_neurons=cell_neurons, epochs=epochs, batch_size=batch_size)
     history = model.history
 
     # pyplot.plot(history.history['mean_absolute_percentage_error'])

@@ -19,7 +19,10 @@ def run(_filenames, _start_date, training_years, validation_months, test_months)
 
     config = workflow.generate_config(
         epochs=500,
-        sae_hidden_dim=[16, 8, 8]
+        sae_hidden_dim=[5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+        lstm_cell_neurons=8,
+        lstm_time_step=4,
+        lstm_batch_size=60
     )
 
     df = datasets.load_HSI()
@@ -65,7 +68,7 @@ if __name__ == "__main__":
 
     study_number = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-    runs = 3
+    runs = 1
 
     trading_files = [None] * runs
 

@@ -3,7 +3,7 @@ from typing import Dict
 import pandas as pd
 from keras.layers import Input, Dense
 from keras.models import Model
-from sklearn.preprocessing import MinMaxScaler
+import sklearn.preprocessing as preprocessing
 from sklearn.model_selection import train_test_split
 import sklearn.metrics as skmet
 import matplotlib.pyplot as plt
@@ -81,7 +81,7 @@ def fit_predict(
     # normalize data if required
     if apply_scaler:
         # fit scaler using training data
-        scaler = MinMaxScaler()
+        scaler = preprocessing.MinMaxScaler()
         scaler.fit(df_in_train)
 
         df_in_train_scaled = scaler.transform(df_in_train)

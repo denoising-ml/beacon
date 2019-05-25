@@ -76,8 +76,11 @@ class StudyFilenames:
 
 def generate_config(
         epochs=1000,
-        sae_hidden_dim=None
-):
+        sae_hidden_dim=None,
+        lstm_cell_neurons=10,
+        lstm_time_step=3,
+        lstm_batch_size=60):
+
     if sae_hidden_dim is None:
         sae_hidden_dim = [16, 8]
 
@@ -91,7 +94,10 @@ def generate_config(
             'epochs': epochs
         },
         'lstm_layer': {
-            'epochs': epochs
+            'epochs': epochs,
+            'cell_neurons': lstm_cell_neurons,
+            'time_step': lstm_time_step,
+            'batch_size': lstm_batch_size
         },
         'pre_backtrader_layer': {
         },
