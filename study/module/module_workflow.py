@@ -132,7 +132,7 @@ def study_hsi(config, run_number, study_number):
 
     # Save config
     with open(_filenames.config, 'w') as outfile:
-        json.dump(config, outfile)
+        json.dump(config, outfile, indent=4)
 
     # Load raw data
     df_raw_data = pd.read_csv('../data/input/HSI_figshare.csv')

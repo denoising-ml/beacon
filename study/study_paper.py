@@ -5,6 +5,7 @@ from dateutil.relativedelta import relativedelta
 import study.module.module_datasets as datasets
 import study.module.module_backtrader as backtrader
 import pandas as pd
+import json
 
 
 def run(_filenames, _start_date, training_years, validation_months, test_months):
@@ -19,11 +20,15 @@ def run(_filenames, _start_date, training_years, validation_months, test_months)
 
     config = workflow.generate_config(
         epochs=500,
-        sae_hidden_dim=[5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+        sae_hidden_dim=[16, 8, 8],
         lstm_cell_neurons=8,
         lstm_time_step=4,
         lstm_batch_size=60
     )
+
+    # Save config
+    with open(_filenames.config, 'w') as outfile:
+        json.dump(config, outfile, indent=4)
 
     df = datasets.load_HSI()
     data_train = df[training_start_date: training_end_date]
@@ -65,27 +70,33 @@ if __name__ == "__main__":
     df = datasets.load_HSI()
 
     start_date = datetime(2008, 7, 1)
+    training_years = 2
+    validation_months = 3
+    test_months = 3
+    runs = 1
 
     study_number = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-    runs = 1
-
     trading_files = [None] * runs
 
+    # go through each run period
     for i in range(runs):
         print('run_{}'.format(i))
 
-        filenames = workflow.StudyFilenames(i, study_number)
+        # generate file names config
+        file_names = workflow.StudyFilenames(i, study_number)
 
-        run(filenames, start_date, 2, 3, 3)
+        run(file_names, start_date, training_years, validation_months, test_months)
+
+        # move to next training start date
         start_date = start_date + relativedelta(months=+3)
 
         # collect file name of backtrader market data file
-        trading_files[i] = filenames.backtrader_mktdata
+        trading_files[i] = file_names.backtrader_mktdata
 
     # concatenate all market data files into one
     i = 0
-    master_file = filenames.root + '/master_trades.csv'
+    master_file = file_names.root + '/master_trades.csv'
     with open(master_file, 'w') as outfile:
         for fname in trading_files:
             with open(fname) as infile:
@@ -100,5 +111,5 @@ if __name__ == "__main__":
     # calculate overall performance
     backtrader.run_backtrader(None,
                               master_file,
-                              filenames.root + '/master_backtrader.pdf',
-                              filenames.root + '/master_pyfolio.pdf')
+                              file_names.root + '/master_backtrader.pdf',
+                              file_names.root + '/master_pyfolio.pdf')
