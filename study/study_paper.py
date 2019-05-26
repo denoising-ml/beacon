@@ -2,16 +2,17 @@ import study.module.module_workflow as workflow
 import study.module.module_datasets as datasets
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import study.module.module_utils as utils
 import study.module.module_datasets as datasets
 import study.module.module_backtrader as backtrader
 import pandas as pd
 import json
 
 
-def run(_filenames, _start_date, training_years, validation_months, test_months):
+def run(_filenames, _start_date, training_months, validation_months, test_months):
 
     training_start_date = _start_date
-    validation_start_date = training_start_date + relativedelta(years=training_years)
+    validation_start_date = training_start_date + relativedelta(months=training_months)
     test_start_date = validation_start_date + relativedelta(months=validation_months)
 
     training_end_date = validation_start_date - relativedelta(days=1)
@@ -32,7 +33,12 @@ def run(_filenames, _start_date, training_years, validation_months, test_months)
 
     df = datasets.load_HSI()
     data_train = df[training_start_date: training_end_date]
-    data_validation = df[validation_start_date: validation_end_date]
+
+    if validation_months > 0:
+        data_validation = df[validation_start_date: validation_end_date]
+    else:
+        data_validation = None
+
     data_test = df[test_start_date: test_end_date]
 
     print("Training period: {} - {}".format(training_start_date, training_end_date))
@@ -61,32 +67,52 @@ def run(_filenames, _start_date, training_years, validation_months, test_months)
 
 
 def make_even_rows(_df):
+    if _df is None:
+        return _df
+
     if _df.shape[0] % 2 != 0:
         _df = _df.iloc[1:]
     return _df
 
 
+def gen_paper_config():
+    return gen_config(datetime(2008, 7, 1), 2*12, 3, 3, 1)
+
+
+def gen_one_config():
+    return gen_config(datetime(2008, 7, 1), 6*12+2, 0, 25, 1)
+
+
+def gen_config(start_date, training_months, validation_months, test_months, runs):
+    _config = {
+        'start_date': start_date,
+        'training_months': training_months,
+        'validation_months': validation_months,
+        'test_months': test_months,
+        'runs': runs
+    }
+    return utils.DotDict(_config)
+
+
 if __name__ == "__main__":
     df = datasets.load_HSI()
 
-    start_date = datetime(2008, 7, 1)
-    training_years = 2
-    validation_months = 3
-    test_months = 3
-    runs = 1
+    config = gen_one_config()
 
     study_number = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-    trading_files = [None] * runs
+    trading_files = [None] * config.runs
+
+    start_date = config.start_date
 
     # go through each run period
-    for i in range(runs):
+    for i in range(config.runs):
         print('run_{}'.format(i))
 
         # generate file names config
         file_names = workflow.StudyFilenames(i, study_number)
 
-        run(file_names, start_date, training_years, validation_months, test_months)
+        run(file_names, start_date, config.training_months, config.validation_months, config.test_months)
 
         # move to next training start date
         start_date = start_date + relativedelta(months=+3)
