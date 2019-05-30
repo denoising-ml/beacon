@@ -6,6 +6,11 @@ from statsmodels import robust
 import math
 
 
+'''
+Boundary problem and data leakage: a caveat for wavelet based forecasting:
+https://www.jcer.or.jp/jcer_download_log.php?post_id=38552&file_post_id=38554
+'''
+
 def compute_threshold(coeffs):
     """
     Compute threshold using VisuShrink approach which employs a single universal threshold to all
