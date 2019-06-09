@@ -18,6 +18,9 @@ class StudyFilenames:
     def get_test_filename(self, desc: str):
         return self.get_filename('test', desc)
 
+    def get_model_filename(self, desc: str):
+        return self.get_filename('model', desc, 'h5')
+
     def get_filename(self, data_type: str, desc: str, file_type: str = 'csv'):
         return '{}/run_{}_{}_{}.{}'.format(
             self.directory, self.run_number, data_type, desc, file_type)
@@ -72,6 +75,11 @@ class StudyFilenames:
         self.plot_backtrader = self.get_filename('plot', 'backtrader', 'pdf')
         self.plot_pyfolio = self.get_filename('plot', 'pyfolio', 'pdf')
         self.plot_accuracy = self.get_filename('plot', 'accuracy', 'pdf')
+
+        # model files
+        self.model_autoencoder = self.get_model_filename('autoencoder')
+        self.model_encoder = self.get_model_filename('encoder')
+        self.model_lstm = self.get_model_filename('lstm')
 
 
 def generate_config(
@@ -212,26 +220,32 @@ def run_dwt(_config, _filenames):
 def run_sae(_config, _filenames):
     sae_config = _config['sae_layer']
 
-    sae_layer.fit_predict(config=sae_config,
-                          train_in_file=_filenames.train_dwt_denoised,
-                          train_encoder_file=_filenames.train_sae_encoder,
-                          train_decoder_file=_filenames.train_sae_decoder,
-                          test_in_file=_filenames.test_dwt_denoised,
-                          test_encoder_file=_filenames.test_sae_encoder,
-                          test_decoder_file=_filenames.test_sae_decoder,
-                          loss_plot_file=_filenames.sae_loss_plot)
+    autoencoder, encoder = sae_layer.fit_predict(config=sae_config,
+                                                 train_in_file=_filenames.train_dwt_denoised,
+                                                 train_encoder_file=_filenames.train_sae_encoder,
+                                                 train_decoder_file=_filenames.train_sae_decoder,
+                                                 test_in_file=_filenames.test_dwt_denoised,
+                                                 test_encoder_file=_filenames.test_sae_encoder,
+                                                 test_decoder_file=_filenames.test_sae_decoder,
+                                                 loss_plot_file=_filenames.sae_loss_plot)
 
+    # save model
+    autoencoder.save(_filenames.model_autoencoder)
+    encoder.save(_filenames.model_encoder)
 
 def run_lstm(_config, _filenames):
     lstm_config = _config['lstm_layer']
 
-    lstm_layer.fit_predict(config=lstm_config,
-                           train_in_file=_filenames.train_sae_encoder,
-                           train_expected_file=_filenames.train_lstm_label,
-                           train_predicted_file=_filenames.train_lstm_predict,
-                           test_in_file=_filenames.test_sae_encoder,
-                           test_expected_file=_filenames.test_lstm_label,
-                           test_predicted_file=_filenames.test_lstm_predict)
+    model = lstm_layer.fit_predict(config=lstm_config,
+                                   train_in_file=_filenames.train_sae_encoder,
+                                   train_expected_file=_filenames.train_lstm_label,
+                                   train_predicted_file=_filenames.train_lstm_predict,
+                                   test_in_file=_filenames.test_sae_encoder,
+                                   test_expected_file=_filenames.test_lstm_label,
+                                   test_predicted_file=_filenames.test_lstm_predict)
+
+    # save model
+    model.save(_filenames.model_lstm)
 
 
 def run_backtrader(_config, _filenames):

@@ -141,6 +141,7 @@ def fit_predict(
         plot_loss(autoencoder, loss_plot_file)
 
     print('------------------ SAE End ----------------------')
+    return autoencoder, encoder
 
 
 def plot_loss(model, loss_plot_file):

@@ -143,6 +143,7 @@ def fit_predict(
     pd.DataFrame(predicted_test).to_csv(test_predicted_file)
 
     print('------------------ LSTM End -------------------')
+    return model
 
 
 if __name__ == "__main__":
