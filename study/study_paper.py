@@ -24,6 +24,7 @@ def run(_filenames, _start_date, training_months, validation_months, test_months
         sae_hidden_dim=[16, 8, 8],
         lstm_cell_neurons=8,
         lstm_time_step=4,
+        lstm_layers=5,
         lstm_batch_size=60
     )
 
@@ -76,7 +77,7 @@ def make_even_rows(_df):
 
 
 def gen_paper_config():
-    return gen_config(datetime(2008, 7, 1), 2*12, 3, 3, 1)
+    return gen_config(datetime(2008, 7, 1), 2*12, 3, 3, 24)
 
 
 def gen_one_config():
@@ -97,7 +98,7 @@ def gen_config(start_date, training_months, validation_months, test_months, runs
 if __name__ == "__main__":
     df = datasets.load_HSI()
 
-    config = gen_one_config()
+    config = gen_paper_config()
 
     study_number = datetime.now().strftime('%Y%m%d_%H%M%S')
 
