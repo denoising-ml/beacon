@@ -19,6 +19,7 @@ if __name__ == "__main__":
             sae_hidden_dim=hidden_layer,
             lstm_cell_neurons=8,
             lstm_time_step=4,
+            lstm_layers=5,
             lstm_batch_size=50
         )
         run_number += 1

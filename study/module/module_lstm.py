@@ -16,14 +16,33 @@ from numpy.random import seed
 seed(20190410)
 
 
-def lstm_model(x_train, y_train, cell_neurons, epochs, batch_size):
+def lstm_model(x_train, y_train, cell_neurons, epochs, batch_size, layers):
 
     """
-    Build a many-to-one LSTM model
-    Args
+    All except the last LSTMs return their full output sequences (return_sequences=True),
+    but the last one only returns the last time step in its output sequence, thus dropping the temporal dimension
+    (i.e. converting the input sequence into a single vector).
 
-    Returns
+    -------------------------------------------------------------
+    LSTM-1         Input:     (none, time_step, features)
+                   Output:    (none, time_step, cell_neurons)
+    -------------------------------------------------------------
+    LSTM-2..(N-1)  Input:     (none, time_step, cell_neurons)
+                   Output:    (none, time_step, cell_neurons)
+    -------------------------------------------------------------
+    LSTM-N         Input:     (none, time_step, cell_neurons)
+                   Output:    (none, cell_neurons)
+    -------------------------------------------------------------
+    Dense          Input:     (none, cell_neurons)
+                   Output:    (none, 1)
 
+    If only 1 layer:
+    -------------------------------------------------------------
+    LSTM-1         Input:     (none, time_step, features)
+                   Output:    (none, cell_neurons)
+    -------------------------------------------------------------
+    Dense          Input:     (none, cell_neurons)
+                   Output:    (none, 1)
     """
     assert y_train.ndim == 1
     assert x_train.ndim == 3
@@ -32,10 +51,22 @@ def lstm_model(x_train, y_train, cell_neurons, epochs, batch_size):
     input_shape = (x_shape[1], x_shape[2])
 
     _model = Sequential()
-    _model.add(LSTM(units=cell_neurons,
-                    input_shape=input_shape,
-                    activation='relu'))
+
+    if layers == 1:
+        _model.add(LSTM(units=cell_neurons, input_shape=input_shape, activation='relu'))
+    else:
+        _model.add(LSTM(units=cell_neurons, input_shape=input_shape, return_sequences=True, activation='relu'))
+        layers -= 1
+
+        if layers > 1:
+            _model.add(LSTM(units=cell_neurons, return_sequences=True))
+            layers -=1
+
+        _model.add(LSTM(units=cell_neurons, activation='relu'))
+
+    # dense output layer
     _model.add((Dense(1)))
+
     _model.compile(loss="mean_squared_error",
                    optimizer="adam",
                    metrics=['mse', 'mae', 'mape'])
@@ -126,7 +157,15 @@ def fit_predict(
     cell_neurons = config.get('cell_neurons', 5)
     epochs = config.get('epochs', 800)
     batch_size = config.get('batch_size', 60)
-    model = lstm_model(x_train=in_train, y_train=expected_train, cell_neurons=cell_neurons, epochs=epochs, batch_size=batch_size)
+    layers = config.get('layers', 1)
+
+    model = lstm_model(x_train=in_train,
+                       y_train=expected_train,
+                       cell_neurons=cell_neurons,
+                       epochs=epochs,
+                       batch_size=batch_size,
+                       layers=layers)
+
     history = model.history
 
     # pyplot.plot(history.history['mean_absolute_percentage_error'])

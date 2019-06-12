@@ -87,6 +87,7 @@ def generate_config(
         sae_hidden_dim=None,
         lstm_cell_neurons=10,
         lstm_time_step=3,
+        lstm_layers=1,
         lstm_batch_size=60):
 
     if sae_hidden_dim is None:
@@ -105,6 +106,7 @@ def generate_config(
             'epochs': epochs,
             'cell_neurons': lstm_cell_neurons,
             'time_step': lstm_time_step,
+            'layers': lstm_layers,
             'batch_size': lstm_batch_size
         },
         'pre_backtrader_layer': {
