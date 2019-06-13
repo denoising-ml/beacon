@@ -21,7 +21,7 @@ def run(_filenames, _start_date, training_months, validation_months, test_months
 
     config = workflow.generate_config(
         epochs=500,
-        sae_hidden_dim=[16, 8, 8],
+        sae_hidden_dim=[10, 10, 10, 10, 10],
         lstm_cell_neurons=8,
         lstm_time_step=4,
         lstm_layers=5,
@@ -77,7 +77,7 @@ def make_even_rows(_df):
 
 
 def gen_paper_config():
-    return gen_config(datetime(2008, 7, 1), 2*12, 3, 3, 24)
+    return gen_config(datetime(2008, 7, 1), 2*12, 3, 3, 4)
 
 
 def gen_one_config():
