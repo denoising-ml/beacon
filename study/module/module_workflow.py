@@ -44,7 +44,7 @@ class StudyFilenames:
         self.train_input = self.get_train_filename('input')
         self.test_input = self.get_test_filename('input')
 
-        # DWT denoised output
+        # DWT denoised output (scaled)
         self.train_dwt_denoised = self.get_train_filename('dwt_denoised')
         self.test_dwt_denoised = self.get_test_filename('dwt_denoised')
 
@@ -52,9 +52,17 @@ class StudyFilenames:
         self.train_dwt_denoised_orig = self.get_train_filename('dwt_denoised_orig')
         self.test_dwt_denoised_orig = self.get_test_filename('dwt_denoised_orig')
 
+        # SAE encoder scaled input features
+        self.train_in_scaled_file = self.get_train_filename('sae_scaled_input')
+        self.test_in_scaled_file = self.get_test_filename('sae_scaled_input')
+
         # SAE encoder output
         self.train_sae_encoder = self.get_train_filename('sae_encoder')
         self.test_sae_encoder = self.get_test_filename('sae_encoder')
+
+        # SAE decoder scaled output
+        self.train_decoder_scaled_file = self.get_train_filename('sae_decoder_scaled')
+        self.test_decoder_scaled_file = self.get_test_filename('sae_decoder_scaled')
 
         # SAE decoder output
         self.train_sae_decoder = self.get_train_filename('sae_decoder')
@@ -224,10 +232,14 @@ def run_sae(_config, _filenames):
 
     autoencoder, encoder = sae_layer.fit_predict(config=sae_config,
                                                  train_in_file=_filenames.train_dwt_denoised,
+                                                 train_in_scaled_file=_filenames.train_in_scaled_file,
                                                  train_encoder_file=_filenames.train_sae_encoder,
+                                                 train_decoder_scaled_file=_filenames.train_decoder_scaled_file,
                                                  train_decoder_file=_filenames.train_sae_decoder,
                                                  test_in_file=_filenames.test_dwt_denoised,
+                                                 test_in_scaled_file=_filenames.test_in_scaled_file,
                                                  test_encoder_file=_filenames.test_sae_encoder,
+                                                 test_decoder_scaled_file=_filenames.test_decoder_scaled_file,
                                                  test_decoder_file=_filenames.test_sae_decoder,
                                                  loss_plot_file=_filenames.sae_loss_plot)
 

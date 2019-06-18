@@ -1,5 +1,3 @@
-%matplotlib inline
-%config IPCompleter.greedy = True
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -22,8 +20,8 @@ df_merged_data.drop(["Unnamed: 0"], inplace=True, axis=1)
 #Split Data
 X_train, X_test = train_test_split(df_merged_data, train_size = 0.75, random_state = seed(2017))
 
-wv_train = pd.DataFrame(X_train, index=None) 
-wv_train.to_csv("preprocessing/wv_train.csv")  
+wv_train = pd.DataFrame(X_train, index=None)
+wv_train.to_csv("preprocessing/wv_train.csv")
 
 wv_test = pd.DataFrame(X_test)
 wv_test.to_csv("preprocessing/wv_test.csv")
@@ -54,10 +52,10 @@ def sae():
     sgd = SGD(lr=0.01, decay=10e-5, momentum=0.9, nesterov=True) #0.001, 0.003, 0.01, 0.03, 0.1, 0.3
     autoencoder.compile(optimizer = sgd, loss = 'mean_squared_error', metrics=['accuracy'])
     autoencoder.summary()
-    #Stop processing when accuracy stop increasing 
+    #Stop processing when accuracy stop increasing
     early_stop = EarlyStopping(monitor='acc', patience=1, verbose=1)
 
-    history = autoencoder.fit(X_train, X_train, nb_epoch = 100, batch_size = 60, shuffle = False, 
+    history = autoencoder.fit(X_train, X_train, nb_epoch = 100, batch_size = 60, shuffle = False,
                             validation_data = (X_test, X_test), callbacks=[early_stop])
     # THE ENCODER TO EXTRACT THE REDUCED DIMENSION FROM THE ABOVE AUTOENCODER
     encoder = Model(input = input_dim, output = encoded)

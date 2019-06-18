@@ -1,12 +1,11 @@
 from typing import Dict
-
 import pandas as pd
 from keras.layers import Input, Dense
 from keras.models import Model
 import sklearn.preprocessing as preprocessing
-from sklearn.model_selection import train_test_split
 import sklearn.metrics as skmet
 import matplotlib.pyplot as plt
+import os
 
 
 def sae(train_x,
@@ -15,6 +14,7 @@ def sae(train_x,
         epochs,
         optimizer="adadelta",
         loss="mean_squared_error"):
+
     assert train_x.ndim == 2
     assert validate_x.ndim == 2
     assert validate_x.shape[1] == train_x.shape[1]
@@ -56,18 +56,18 @@ def sae(train_x,
 
 def fit_predict(
         config: Dict,
-        train_in_file: str,
-        train_encoder_file: str,
-        train_decoder_file: str,
-        test_in_file: str,
-        test_encoder_file: str,
-        test_decoder_file: str,
+        train_in_file: str,                     # training - input features
+        train_in_scaled_file: str,              # training - scaled input features (input into model)
+        train_encoder_file: str,                # training - encoded features
+        train_decoder_scaled_file: str,         # training - decoded features (scaled)
+        train_decoder_file: str,                # training - decoded features (in original scale)
+        test_in_file: str,                      # test     - input features
+        test_in_scaled_file: str,               # test     - scaled input features (input into model)
+        test_encoder_file: str,                 # test     - encoded features
+        test_decoder_scaled_file: str,          # test     - decoded features (scaled)
+        test_decoder_file: str,                 # test     - decoded features (in original scale)
         loss_plot_file: str = None,
-        train_in_scaled_file: str = None,
-        train_decoder_scaled_file: str = None,
-        test_in_scaled_file: str = None,
-        test_decoder_scaled_file: str = None
-):
+    ):
     print('------------------ SAE Start --------------------')
     df_in_train = pd.read_csv(train_in_file, index_col=0)
     df_in_test = pd.read_csv(test_in_file, index_col=0)
@@ -165,10 +165,23 @@ def plot_loss(model, loss_plot_file):
 
 
 def study_sae():
-    file_prefix = 'c:/Temp/beacon/study_sae/run_1_'
-    in_test_file = file_prefix + 'test_dwt_denoised.csv'
+    # change this folder and input files
+    directory = 'C:/temp/beacon/study_20190613_103320/run_0/'
+    in_train_file = directory + 'run_0_train_dwt_denoised.csv'
+    in_test_file = directory + 'run_0_test_dwt_denoised.csv'
+
+    # put all output files in a sub folder
+    file_prefix = directory + 'sae/'
+    if not os.path.exists(file_prefix):
+        os.makedirs(file_prefix)
+
+    # test - input features after scaling
     in_scaled_test_file = file_prefix + 'test_dwt_denoised_scaled.csv'
+
+    # test - decoder features output (scaled)
     predicted_scaled_test_file = file_prefix + 'test_sae_decoder_scaled.csv'
+
+    # test - decoder features output (in original scale)
     predicted_test_file = file_prefix + 'test_sae_decoder.csv'
 
     dimensions = {
@@ -183,15 +196,17 @@ def study_sae():
 
         fit_predict(
             config=config,
-            train_in_file=file_prefix + 'train_dwt_denoised.csv',
+            train_in_file=in_train_file,
+            train_in_scaled_file=file_prefix + "train_dwt_denoised_scaled.csv",
             train_encoder_file=file_prefix + 'train_sae_encoder.csv',
+            train_decoder_scaled_file=file_prefix + 'train_sae_decoder_scaled.csv',
             train_decoder_file=file_prefix + 'train_sae_decoder.csv',
             test_in_file=in_test_file,
+            test_in_scaled_file=in_scaled_test_file,
             test_encoder_file=file_prefix + 'test_sae_encoder.csv',
+            test_decoder_scaled_file=predicted_scaled_test_file,
             test_decoder_file=predicted_test_file,
             loss_plot_file=file_prefix + 'plot_sae_loss.png',
-            test_in_scaled_file=in_scaled_test_file,
-            test_decoder_scaled_file=predicted_scaled_test_file
         )
 
         # Plot predicted vs actual close
@@ -201,38 +216,42 @@ def study_sae():
         df_out_scaled_test_data = pd.read_csv(predicted_scaled_test_file)
         df_out_test_data = pd.read_csv(predicted_test_file)
 
-        column_names = df_in_test_data.columns.tolist()
-        # df_display = df_in_test_data.iloc[:, [1]].copy()
-        # df_display.columns = ['in']
-        # df_display['out'] = df_out_test_data.iloc[:, 1].copy()
-
-        all_mape = []
-        all_mse = []
+        column_names = df_in_test_data.columns
 
         for column in range(1, 19):
-            plot_file = file_prefix + key + '_' + str(column) + '.png'
+            column_name = column_names[column]
 
+            # create two columns of in and out scaled features
             df_display = df_in_scaled_test_data.iloc[:, [column]].copy()
             df_display.columns = ['in_scaled']
             df_display['out_scaled'] = df_out_scaled_test_data.iloc[:, column].copy()
 
-            # mape = skmet.mean_absolute_error(df_in_scaled_test_data, df_out_scaled_test_data)
-            # mse = skmet.mean_squared_error(df_in_scaled_test_data, df_out_scaled_test_data)
-            mape = skmet.mean_absolute_error(df_display['in_scaled'], df_display['out_scaled'])
-            mse = skmet.mean_squared_error(df_display['in_scaled'], df_display['out_scaled'])
+            plot_file = file_prefix + key + '_scaled_' + column_name + '.png'
+            analyse_losses(df_display, column_name + '_scaled', 'in_scaled', 'out_scaled', plot_file)
 
-            all_mape.append(mape)
-            all_mse.append(mse)
+            # create two columns of in and out features in original scale
+            df_display = df_in_test_data.iloc[:, [column]].copy()
+            df_display.columns = ['in_original']
 
-            column_name = column_names[column]
-            print('----- Column: {} / MAPE: {:.4f} / MSE: {:.4f}'.format(column_name, mape, mse))
+            df_display['out_original'] = df_out_test_data.iloc[:, column].copy()
 
-            ax = plt.gca()
-            df_display.plot(ax=ax)
-            # plt.show()
-            plt.title('Column: {} / SAE: {} / MAPE: {:.4f} / MSE: {:.4f}'.format(column_name, key, mape, mse))
-            plt.savefig(plot_file)
-            plt.clf()
+            plot_file = file_prefix + key + '_original_' + column_name + '.png'
+            analyse_losses(df_display, column_name + '_original', 'in_original', 'out_original', plot_file)
+
+
+def analyse_losses(_df, name, in_name, out_name, plot_file):
+    # compute losses between in and out scaled features
+    mape = skmet.mean_absolute_error(_df[in_name], _df[out_name])
+    mse = skmet.mean_squared_error(_df[in_name], _df[out_name])
+
+    print('----- Column: {} / MAPE: {:.4f} / MSE: {:.4f}'.format(name, mape, mse))
+
+    # save plots
+    ax = plt.gca()
+    _df.plot(ax=ax)
+    plt.title('Column: {} / SAE Losses/ MAPE: {:.4f} / MSE: {:.4f}'.format(name, mape, mse))
+    plt.savefig(plot_file)
+    plt.clf()
 
 
 if __name__ == "__main__":
