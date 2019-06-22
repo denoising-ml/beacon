@@ -1,11 +1,13 @@
 from typing import Dict
 import pandas as pd
+import keras
 from keras.layers import Input, Dense
 from keras.models import Model
 import sklearn.preprocessing as preprocessing
 import sklearn.metrics as skmet
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
 
 def sae(train_x,
@@ -13,7 +15,8 @@ def sae(train_x,
         hidden_dimensions,
         epochs,
         optimizer="adadelta",
-        loss="mean_squared_error"):
+        loss="mean_squared_error",
+        tensorboard_dir=None):
 
     assert train_x.ndim == 2
     assert validate_x.ndim == 2
@@ -33,7 +36,7 @@ def sae(train_x,
         last_decoded_layer = Dense(hidden_dim, activation='relu')(last_decoded_layer)
 
     # output layer
-    last_decoded_layer = Dense(n_features, activation='sigmoid')(last_decoded_layer)
+    last_decoded_layer = Dense(n_features, activation='linear')(last_decoded_layer)
 
     # autoencoder model
     autoencoder = Model(input=input_dim, output=last_decoded_layer)
@@ -43,13 +46,23 @@ def sae(train_x,
     # encoder model
     encoder = Model(input=input_dim, output=last_encoded_layer)
 
+    # callbacks
+    callbacks = []
+    if tensorboard_dir is not None:
+        tbCallBack = keras.callbacks.TensorBoard(log_dir=tensorboard_dir,
+                                                 histogram_freq=0,
+                                                 write_graph=True,
+                                                 write_images=True)
+        callbacks.append(tbCallBack)
+
     # configure and fit the model
     autoencoder.fit(train_x,
                     train_x,
                     epochs=epochs,
                     batch_size=50,
                     shuffle=False,
-                    validation_data=(validate_x, validate_x))
+                    validation_data=(validate_x, validate_x),
+                    callbacks=callbacks)
 
     return autoencoder, encoder
 
@@ -67,7 +80,9 @@ def fit_predict(
         test_decoder_scaled_file: str,          # test     - decoded features (scaled)
         test_decoder_file: str,                 # test     - decoded features (in original scale)
         loss_plot_file: str = None,
-    ):
+        tensorboard_dir: str = None,
+):
+
     print('------------------ SAE Start --------------------')
     df_in_train = pd.read_csv(train_in_file, index_col=0)
     df_in_test = pd.read_csv(test_in_file, index_col=0)
@@ -105,7 +120,8 @@ def fit_predict(
     autoencoder, encoder = sae(train_x=df_in_train_scaled,
                                validate_x=df_in_test_scaled,
                                epochs=epochs,
-                               hidden_dimensions=hidden_dim)
+                               hidden_dimensions=hidden_dim,
+                               tensorboard_dir=tensorboard_dir)
 
     # get decoder output
     out_decoder_train_scaled = autoencoder.predict(df_in_train_scaled)
@@ -166,7 +182,7 @@ def plot_loss(model, loss_plot_file):
 
 def study_sae():
     # change this folder and input files
-    directory = 'C:/temp/beacon/study_20190613_103320/run_0/'
+    directory = 'C:/temp/beacon/study_20190619_131015/run_0/'
     in_train_file = directory + 'run_0_train_dwt_denoised.csv'
     in_test_file = directory + 'run_0_test_dwt_denoised.csv'
 
@@ -185,13 +201,13 @@ def study_sae():
     predicted_test_file = file_prefix + 'test_sae_decoder.csv'
 
     dimensions = {
-        '10x5': [10, 10, 10, 10, 10]
+        '10x5': [16, 16, 16, 16, 16, 16, 16, 16]
     }
 
     for key, value in dimensions.items():
 
         config = {'hidden_dim': value,
-                  'epochs': 500
+                  'epochs': 1000
                   }
 
         fit_predict(
@@ -218,7 +234,11 @@ def study_sae():
 
         column_names = df_in_test_data.columns
 
-        for column in range(1, 19):
+        losses_scaled = [0, 0]
+        losses_orig = [0, 0]
+
+        # skip first index column
+        for column in range(1, len(column_names)):
             column_name = column_names[column]
 
             # create two columns of in and out scaled features
@@ -227,7 +247,8 @@ def study_sae():
             df_display['out_scaled'] = df_out_scaled_test_data.iloc[:, column].copy()
 
             plot_file = file_prefix + key + '_scaled_' + column_name + '.png'
-            analyse_losses(df_display, column_name + '_scaled', 'in_scaled', 'out_scaled', plot_file)
+            losses = analyse_losses(df_display, column_name + '_scaled', 'in_scaled', 'out_scaled', plot_file)
+            losses_scaled = np.vstack((losses_scaled, losses))
 
             # create two columns of in and out features in original scale
             df_display = df_in_test_data.iloc[:, [column]].copy()
@@ -236,7 +257,11 @@ def study_sae():
             df_display['out_original'] = df_out_test_data.iloc[:, column].copy()
 
             plot_file = file_prefix + key + '_original_' + column_name + '.png'
-            analyse_losses(df_display, column_name + '_original', 'in_original', 'out_original', plot_file)
+            losses = analyse_losses(df_display, column_name + '_original', 'in_original', 'out_original', plot_file)
+            losses_orig = np.vstack((losses_orig, losses))
+
+    print('Losses on scaled data: {}'.format(np.sum(losses_scaled, axis=0)))
+    print('Losses on original data: {}'.format(np.sum(losses_orig, axis=0)))
 
 
 def analyse_losses(_df, name, in_name, out_name, plot_file):
@@ -252,6 +277,8 @@ def analyse_losses(_df, name, in_name, out_name, plot_file):
     plt.title('Column: {} / SAE Losses/ MAPE: {:.4f} / MSE: {:.4f}'.format(name, mape, mse))
     plt.savefig(plot_file)
     plt.clf()
+
+    return [mape, mse]
 
 
 if __name__ == "__main__":

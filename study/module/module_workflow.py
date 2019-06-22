@@ -25,6 +25,9 @@ class StudyFilenames:
         return '{}/run_{}_{}_{}.{}'.format(
             self.directory, self.run_number, data_type, desc, file_type)
 
+    def get_directory(self, folder):
+        return '{}/{}'.format(self.directory, folder)
+
     def __init__(self, run_number, study_number):
         self.run_number = run_number
         self.study_number = study_number
@@ -89,6 +92,10 @@ class StudyFilenames:
         self.model_encoder = self.get_model_filename('encoder')
         self.model_lstm = self.get_model_filename('lstm')
 
+        # TensorBoard logs
+        self.tensorboard_sae = self.get_directory('tensorboard_sae')
+        self.tensorboard_lstm = self.get_directory('tensorboard_lstm')
+
 
 def generate_config(
         epochs=1000,
@@ -108,7 +115,7 @@ def generate_config(
         },
         'sae_layer': {
             'hidden_dim': sae_hidden_dim,
-            'epochs': epochs
+            'epochs': epochs,
         },
         'lstm_layer': {
             'epochs': epochs,
@@ -241,7 +248,8 @@ def run_sae(_config, _filenames):
                                                  test_encoder_file=_filenames.test_sae_encoder,
                                                  test_decoder_scaled_file=_filenames.test_decoder_scaled_file,
                                                  test_decoder_file=_filenames.test_sae_decoder,
-                                                 loss_plot_file=_filenames.sae_loss_plot)
+                                                 loss_plot_file=_filenames.sae_loss_plot,
+                                                 tensorboard_dir=_filenames.tensorboard_sae)
 
     # save model
     autoencoder.save(_filenames.model_autoencoder)

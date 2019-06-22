@@ -53,6 +53,11 @@ def run(_filenames, _start_date, training_months, validation_months, test_months
     data_validation = make_even_rows(data_validation)
     data_test = make_even_rows(data_test)
 
+    # remove date and time column from input data
+    data_train = drop_unuse_column(data_train)
+    data_validation = drop_unuse_column(data_validation)
+    data_test = drop_unuse_column(data_test)
+
     # Save input files
     pd.DataFrame(data_train).to_csv(_filenames.train_input)
     pd.DataFrame(data_test).to_csv(_filenames.test_input)
@@ -76,8 +81,16 @@ def make_even_rows(_df):
     return _df
 
 
+def drop_unuse_column(_df):
+    if _df is None:
+        return _df
+
+    _df = _df.drop(['time'], axis=1)
+    return _df
+
+
 def gen_paper_config():
-    return gen_config(datetime(2008, 7, 1), 2*12, 3, 3, 4)
+    return gen_config(datetime(2008, 7, 1), 2*12, 3, 3, 1)
 
 
 def gen_one_config():
