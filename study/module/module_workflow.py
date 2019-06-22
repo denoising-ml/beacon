@@ -26,7 +26,7 @@ class StudyFilenames:
             self.directory, self.run_number, data_type, desc, file_type)
 
     def get_directory(self, folder):
-        return '{}/{}'.format(self.directory, folder)
+        return '{}/{}/'.format(self.directory, folder)
 
     def __init__(self, run_number, study_number):
         self.run_number = run_number
@@ -95,6 +95,9 @@ class StudyFilenames:
         # TensorBoard logs
         self.tensorboard_sae = self.get_directory('tensorboard_sae')
         self.tensorboard_lstm = self.get_directory('tensorboard_lstm')
+
+        # SAE comparison charts directory
+        self.chart_sae = self.get_directory('chart_sae')
 
 
 def generate_config(
@@ -249,7 +252,8 @@ def run_sae(_config, _filenames):
                                                  test_decoder_scaled_file=_filenames.test_decoder_scaled_file,
                                                  test_decoder_file=_filenames.test_sae_decoder,
                                                  loss_plot_file=_filenames.sae_loss_plot,
-                                                 tensorboard_dir=_filenames.tensorboard_sae)
+                                                 tensorboard_dir=_filenames.tensorboard_sae,
+                                                 chart_dir=_filenames.chart_sae)
 
     # save model
     autoencoder.save(_filenames.model_autoencoder)

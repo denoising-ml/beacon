@@ -81,11 +81,14 @@ def fit_predict(
         test_decoder_file: str,                 # test     - decoded features (in original scale)
         loss_plot_file: str = None,
         tensorboard_dir: str = None,
+        chart_dir: str = None
 ):
 
     print('------------------ SAE Start --------------------')
     df_in_train = pd.read_csv(train_in_file, index_col=0)
     df_in_test = pd.read_csv(test_in_file, index_col=0)
+
+    column_names = df_in_train.columns
 
     print('In train: {} {}'.format(train_in_file, df_in_train.shape))
     print('In test: {} {}'.format(test_in_file, df_in_test.shape))
@@ -99,38 +102,46 @@ def fit_predict(
         scaler = preprocessing.MinMaxScaler()
         scaler.fit(df_in_train)
 
-        df_in_train_scaled = scaler.transform(df_in_train)
-        df_in_test_scaled = scaler.transform(df_in_test)
+        # transform data
+        in_train_scaled = scaler.transform(df_in_train)
+        in_test_scaled = scaler.transform(df_in_test)
 
         scaler_train = scaler
         scaler_test = scaler
 
+        # create data frame from numpy array
+        df_in_train_scaled = pd.DataFrame(data=in_train_scaled, columns=column_names)
+        df_in_test_scaled = pd.DataFrame(data=in_test_scaled, columns=column_names)
     else:
         df_in_train_scaled = df_in_train
         df_in_test_scaled = df_in_test
 
     if train_in_scaled_file is not None:
-        pd.DataFrame(df_in_train_scaled).to_csv(train_in_scaled_file)
+        df_in_train_scaled.to_csv(train_in_scaled_file)
     if test_in_scaled_file is not None:
-        pd.DataFrame(df_in_test_scaled).to_csv(test_in_scaled_file)
+        df_in_test_scaled.to_csv(test_in_scaled_file)
 
     hidden_dim = config.get('hidden_dim', [16, 8])
     epochs = config.get('epochs', 1000)
 
-    autoencoder, encoder = sae(train_x=df_in_train_scaled,
-                               validate_x=df_in_test_scaled,
+    autoencoder, encoder = sae(train_x=in_train_scaled,
+                               validate_x=in_test_scaled,
                                epochs=epochs,
                                hidden_dimensions=hidden_dim,
                                tensorboard_dir=tensorboard_dir)
 
     # get decoder output
-    out_decoder_train_scaled = autoencoder.predict(df_in_train_scaled)
-    out_decoder_test_scaled = autoencoder.predict(df_in_test_scaled)
+    out_decoder_train_scaled = autoencoder.predict(in_train_scaled)
+    out_decoder_test_scaled = autoencoder.predict(in_test_scaled)
+
+    # create data frame for decoder output
+    df_out_decoder_train_scaled = pd.DataFrame(data=out_decoder_train_scaled, columns=column_names)
+    df_out_decoder_test_scaled = pd.DataFrame(data=out_decoder_test_scaled, columns=column_names)
 
     if train_decoder_scaled_file is not None:
-        pd.DataFrame(out_decoder_train_scaled).to_csv(train_decoder_scaled_file)
+        df_out_decoder_train_scaled.to_csv(train_decoder_scaled_file)
     if test_decoder_scaled_file is not None:
-        pd.DataFrame(out_decoder_test_scaled).to_csv(test_decoder_scaled_file)
+        df_out_decoder_test_scaled.to_csv(test_decoder_scaled_file)
 
     # de-normalize decoder output if required
     if apply_scaler:
@@ -140,13 +151,16 @@ def fit_predict(
         out_train = out_decoder_train_scaled
         out_test = out_decoder_test_scaled
 
-    # save decoder output
-    pd.DataFrame(out_train).to_csv(train_decoder_file)
-    pd.DataFrame(out_test).to_csv(test_decoder_file)
+    # create data frame and save decoder output
+    df_out_train = pd.DataFrame(data=out_train, columns=column_names)
+    df_out_train.to_csv(train_decoder_file)
+
+    df_out_test = pd.DataFrame(data=out_test, columns=column_names)
+    df_out_test.to_csv(test_decoder_file)
 
     # get encoder output
-    out_encoder_train = encoder.predict(df_in_train_scaled)
-    out_encoder_test = encoder.predict(df_in_test_scaled)
+    out_encoder_train = encoder.predict(in_train_scaled)
+    out_encoder_test = encoder.predict(in_test_scaled)
 
     # save encoder output
     pd.DataFrame(out_encoder_train).to_csv(train_encoder_file)
@@ -155,6 +169,17 @@ def fit_predict(
     # save loss
     if loss_plot_file is not None:
         plot_loss(autoencoder, loss_plot_file)
+
+    # plot comparison charts
+    if chart_dir is not None:
+        # create directory if not already exists
+        if not os.path.exists(chart_dir):
+            os.makedirs(chart_dir)
+
+        plot_comparison(chart_dir, 'train_original', df_in_train, df_out_train)
+        plot_comparison(chart_dir, 'train_scaled', df_in_train_scaled, df_out_decoder_train_scaled)
+        plot_comparison(chart_dir, 'test_scaled', df_in_test_scaled, df_out_decoder_test_scaled)
+        plot_comparison(chart_dir, 'test_original', df_in_test, df_out_test)
 
     print('------------------ SAE End ----------------------')
     return autoencoder, encoder
@@ -180,9 +205,54 @@ def plot_loss(model, loss_plot_file):
     # plt.show()
 
 
+def plot_comparison(directory, key, df_in, df_out):
+    column_names = df_in.columns
+
+    total_loss = [0, 0]
+
+    # skip first index column
+    for column in range(len(column_names)):
+        column_name = column_names[column]
+        column_name_in = 'in_' + column_name
+        column_name_out = 'out_' + column_name
+
+        # create two columns of in and out data
+        df_display = df_in.iloc[:, [column]].copy()
+        df_display.columns = [column_name_in]
+        df_display[column_name_out] = df_out.iloc[:, column].copy()
+
+        # plot
+        plot_file = directory + key + '_' + column_name + '.png'
+        losses = plot_inout(df_display, column_name, column_name_in, column_name_out, plot_file)
+        total_loss = np.vstack((total_loss, losses))
+
+    print('Total loss on data: {}'.format(np.sum(total_loss, axis=0)))
+
+
+def plot_inout(_df, name, in_name, out_name, plot_file):
+
+    in_column = _df[in_name]
+    out_column = _df[out_name]
+
+    # compute losses between in and out scaled features
+    mape = skmet.mean_absolute_error(in_column, out_column)
+    mse = skmet.mean_squared_error(in_column, out_column)
+
+    print('----- Column: {} | MAPE: {:.4f} | MSE: {:.4f}'.format(name, mape, mse))
+
+    # save plots
+    ax = plt.gca()
+    _df.plot(ax=ax)
+    plt.title('SAE | Column: {} | MAPE: {:.4f} | MSE: {:.4f}'.format(name, mape, mse))
+    plt.savefig(plot_file)
+    plt.clf()
+
+    return [mape, mse]
+
+
 def study_sae():
     # change this folder and input files
-    directory = 'C:/temp/beacon/study_20190619_131015/run_0/'
+    directory = 'C:/temp/beacon/study_20190623_003949/run_0/'
     in_train_file = directory + 'run_0_train_dwt_denoised.csv'
     in_test_file = directory + 'run_0_test_dwt_denoised.csv'
 
@@ -201,13 +271,13 @@ def study_sae():
     predicted_test_file = file_prefix + 'test_sae_decoder.csv'
 
     dimensions = {
-        '10x5': [16, 16, 16, 16, 16, 16, 16, 16]
+        '10x5': [10, 10, 10, 10, 10]
     }
 
     for key, value in dimensions.items():
 
         config = {'hidden_dim': value,
-                  'epochs': 1000
+                  'epochs': 500
                   }
 
         fit_predict(
@@ -225,60 +295,14 @@ def study_sae():
             loss_plot_file=file_prefix + 'plot_sae_loss.png',
         )
 
-        # Plot predicted vs actual close
-
+        # Plot predicted vs actual using test data
         df_in_test_data = pd.read_csv(in_test_file)
         df_in_scaled_test_data = pd.read_csv(in_scaled_test_file)
         df_out_scaled_test_data = pd.read_csv(predicted_scaled_test_file)
         df_out_test_data = pd.read_csv(predicted_test_file)
 
-        column_names = df_in_test_data.columns
-
-        losses_scaled = [0, 0]
-        losses_orig = [0, 0]
-
-        # skip first index column
-        for column in range(1, len(column_names)):
-            column_name = column_names[column]
-
-            # create two columns of in and out scaled features
-            df_display = df_in_scaled_test_data.iloc[:, [column]].copy()
-            df_display.columns = ['in_scaled']
-            df_display['out_scaled'] = df_out_scaled_test_data.iloc[:, column].copy()
-
-            plot_file = file_prefix + key + '_scaled_' + column_name + '.png'
-            losses = analyse_losses(df_display, column_name + '_scaled', 'in_scaled', 'out_scaled', plot_file)
-            losses_scaled = np.vstack((losses_scaled, losses))
-
-            # create two columns of in and out features in original scale
-            df_display = df_in_test_data.iloc[:, [column]].copy()
-            df_display.columns = ['in_original']
-
-            df_display['out_original'] = df_out_test_data.iloc[:, column].copy()
-
-            plot_file = file_prefix + key + '_original_' + column_name + '.png'
-            losses = analyse_losses(df_display, column_name + '_original', 'in_original', 'out_original', plot_file)
-            losses_orig = np.vstack((losses_orig, losses))
-
-    print('Losses on scaled data: {}'.format(np.sum(losses_scaled, axis=0)))
-    print('Losses on original data: {}'.format(np.sum(losses_orig, axis=0)))
-
-
-def analyse_losses(_df, name, in_name, out_name, plot_file):
-    # compute losses between in and out scaled features
-    mape = skmet.mean_absolute_error(_df[in_name], _df[out_name])
-    mse = skmet.mean_squared_error(_df[in_name], _df[out_name])
-
-    print('----- Column: {} / MAPE: {:.4f} / MSE: {:.4f}'.format(name, mape, mse))
-
-    # save plots
-    ax = plt.gca()
-    _df.plot(ax=ax)
-    plt.title('Column: {} / SAE Losses/ MAPE: {:.4f} / MSE: {:.4f}'.format(name, mape, mse))
-    plt.savefig(plot_file)
-    plt.clf()
-
-    return [mape, mse]
+        plot_comparison(file_prefix, key + '_test_original', df_in_test_data, df_out_test_data)
+        plot_comparison(file_prefix, key + '_test_scaled', df_in_scaled_test_data, df_out_scaled_test_data)
 
 
 if __name__ == "__main__":
