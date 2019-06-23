@@ -16,7 +16,6 @@ def sae(train_x,
         epochs,
         optimizer="adadelta",
         loss="mean_squared_error",
-        #kernel_initializer=keras.initializers.Constant(value=0.2),
         kernel_initializer='random_uniform',
         bias_initializer='zeros',
         tensorboard_dir=None):
