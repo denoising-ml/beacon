@@ -16,6 +16,9 @@ def sae(train_x,
         epochs,
         optimizer="adadelta",
         loss="mean_squared_error",
+        #kernel_initializer=keras.initializers.Constant(value=0.2),
+        kernel_initializer='random_uniform',
+        bias_initializer='zeros',
         tensorboard_dir=None):
 
     assert train_x.ndim == 2
@@ -28,12 +31,18 @@ def sae(train_x,
     # encoder layers
     last_encoded_layer = input_dim
     for hidden_dim in hidden_dimensions:
-        last_encoded_layer = Dense(hidden_dim, activation='relu')(last_encoded_layer)
+        last_encoded_layer = Dense(hidden_dim,
+                                   activation='relu',
+                                   kernel_initializer=kernel_initializer,
+                                   bias_initializer=bias_initializer)(last_encoded_layer)
 
     # hidden decoder layers, skip the inner most dimension
     last_decoded_layer = last_encoded_layer
     for hidden_dim in reversed(hidden_dimensions[:-1]):
-        last_decoded_layer = Dense(hidden_dim, activation='relu')(last_decoded_layer)
+        last_decoded_layer = Dense(hidden_dim,
+                                   activation='relu',
+                                   kernel_initializer=keras.initializers.Constant(value=0.1),
+                                   bias_initializer='zeros')(last_decoded_layer)
 
     # output layer
     last_decoded_layer = Dense(n_features, activation='linear')(last_decoded_layer)
@@ -226,7 +235,7 @@ def plot_comparison(directory, key, df_in, df_out):
         losses = plot_inout(df_display, column_name, column_name_in, column_name_out, plot_file)
         total_loss = np.vstack((total_loss, losses))
 
-    print('Total loss on data: {}'.format(np.sum(total_loss, axis=0)))
+    print('Total loss on data {}: {}'.format(key, np.sum(total_loss, axis=0)))
 
 
 def plot_inout(_df, name, in_name, out_name, plot_file):
@@ -252,12 +261,12 @@ def plot_inout(_df, name, in_name, out_name, plot_file):
 
 def study_sae():
     # change this folder and input files
-    directory = 'C:/temp/beacon/study_20190623_003949/run_0/'
+    directory = 'C:/temp/beacon/study_20190623_200655/run_0/'
     in_train_file = directory + 'run_0_train_dwt_denoised.csv'
     in_test_file = directory + 'run_0_test_dwt_denoised.csv'
 
     # put all output files in a sub folder
-    file_prefix = directory + 'sae/'
+    file_prefix = directory + 'analyze_sae/'
     if not os.path.exists(file_prefix):
         os.makedirs(file_prefix)
 
@@ -277,23 +286,26 @@ def study_sae():
     for key, value in dimensions.items():
 
         config = {'hidden_dim': value,
-                  'epochs': 500
+                  'epochs': 1000
                   }
 
-        fit_predict(
-            config=config,
-            train_in_file=in_train_file,
-            train_in_scaled_file=file_prefix + "train_dwt_denoised_scaled.csv",
-            train_encoder_file=file_prefix + 'train_sae_encoder.csv',
-            train_decoder_scaled_file=file_prefix + 'train_sae_decoder_scaled.csv',
-            train_decoder_file=file_prefix + 'train_sae_decoder.csv',
-            test_in_file=in_test_file,
-            test_in_scaled_file=in_scaled_test_file,
-            test_encoder_file=file_prefix + 'test_sae_encoder.csv',
-            test_decoder_scaled_file=predicted_scaled_test_file,
-            test_decoder_file=predicted_test_file,
-            loss_plot_file=file_prefix + 'plot_sae_loss.png',
-        )
+        autoencoder, encoder = fit_predict(config=config,
+                                           train_in_file=in_train_file,
+                                           train_in_scaled_file=file_prefix + "train_dwt_denoised_scaled.csv",
+                                           train_encoder_file=file_prefix + 'train_sae_encoder.csv',
+                                           train_decoder_scaled_file=file_prefix + 'train_sae_decoder_scaled.csv',
+                                           train_decoder_file=file_prefix + 'train_sae_decoder.csv',
+                                           test_in_file=in_test_file,
+                                           test_in_scaled_file=in_scaled_test_file,
+                                           test_encoder_file=file_prefix + 'test_sae_encoder.csv',
+                                           test_decoder_scaled_file=predicted_scaled_test_file,
+                                           test_decoder_file=predicted_test_file,
+                                           loss_plot_file=file_prefix + 'plot_sae_loss.png',
+                                           chart_dir=file_prefix + 'charts/')
+
+        # save model
+        autoencoder.save(file_prefix + 'model_autoencoder.h5')
+        encoder.save(file_prefix + 'model_encoder.h5')
 
         # Plot predicted vs actual using test data
         df_in_test_data = pd.read_csv(in_test_file)

@@ -1,4 +1,3 @@
-from sklearn.model_selection import train_test_split
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
@@ -258,6 +257,7 @@ def run_sae(_config, _filenames):
     # save model
     autoencoder.save(_filenames.model_autoencoder)
     encoder.save(_filenames.model_encoder)
+
 
 def run_lstm(_config, _filenames):
     lstm_config = _config['lstm_layer']

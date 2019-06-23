@@ -5,8 +5,8 @@ from dateutil.relativedelta import relativedelta
 import study.module.module_utils as utils
 import study.module.module_datasets as datasets
 import study.module.module_backtrader as backtrader
-import pandas as pd
 import json
+import pandas as pd
 
 
 def run(_filenames, _start_date, training_months, validation_months, test_months):
@@ -21,7 +21,7 @@ def run(_filenames, _start_date, training_months, validation_months, test_months
 
     config = workflow.generate_config(
         epochs=500,
-        sae_hidden_dim=[10, 10, 10, 10, 10],
+        sae_hidden_dim=[10, 10],
         lstm_cell_neurons=8,
         lstm_time_step=4,
         lstm_layers=5,
