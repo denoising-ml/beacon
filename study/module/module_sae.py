@@ -261,7 +261,7 @@ def plot_inout(_df, name, in_name, out_name, plot_file):
 
 def study_sae():
     # change this folder and input files
-    directory = 'C:/temp/beacon/study_20190623_200655/run_0/'
+    directory = 'C:/temp/beacon/study_20190623_201725/run_0/'
     in_train_file = directory + 'run_0_train_dwt_denoised.csv'
     in_test_file = directory + 'run_0_test_dwt_denoised.csv'
 
@@ -280,7 +280,7 @@ def study_sae():
     predicted_test_file = file_prefix + 'test_sae_decoder.csv'
 
     dimensions = {
-        '10x5': [10, 10, 10, 10, 10]
+        '10x5': [10, 10]
     }
 
     for key, value in dimensions.items():
