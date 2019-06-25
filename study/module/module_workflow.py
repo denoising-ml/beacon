@@ -195,6 +195,12 @@ def study_hsi(config, run_number, study_number):
 
 def start(_config, filenames):
 
+    # Add engineered features
+    add_engineered_features(filenames)
+
+    # Remove some features
+    remove_features(filenames)
+
     # DWT layer
     run_dwt(_config, filenames)
 
@@ -206,6 +212,27 @@ def start(_config, filenames):
 
     # trading performance
     run_backtrader(_config, filenames)
+
+
+def add_engineered_features(filenames):
+    pass
+
+
+def remove_features(_filenames):
+    # load data
+    df_in_train = pd.read_csv(_filenames.train_input, index_col=0)
+    df_in_test = pd.read_csv(_filenames.test_input, index_col=0)
+
+    columns_to_remove = ['Volume', 'ATR', 'HIBOR']
+
+    for column_name in columns_to_remove:
+        df_in_train = df_in_train.drop(column_name, 1)
+        df_in_test = df_in_test.drop(column_name, 1)
+
+    # save data
+    df_in_train.to_csv(_filenames.train_input)
+    df_in_test.to_csv(_filenames.test_input)
+
 
 
 def run_dwt(_config, _filenames):

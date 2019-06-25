@@ -3,6 +3,7 @@ import pandas as pd
 import keras
 from keras.layers import Input, Dense
 from keras.models import Model
+import keras.optimizers as optimizers
 import sklearn.preprocessing as preprocessing
 import sklearn.metrics as skmet
 import matplotlib.pyplot as plt
@@ -14,8 +15,6 @@ def sae(train_x,
         validate_x,
         hidden_dimensions,
         epochs,
-        optimizer="adadelta",
-        loss="mean_squared_error",
         kernel_initializer='random_uniform',
         bias_initializer='zeros',
         tensorboard_dir=None):
@@ -48,7 +47,7 @@ def sae(train_x,
 
     # autoencoder model
     autoencoder = Model(input=input_dim, output=last_decoded_layer)
-    autoencoder.compile(optimizer=optimizer, loss=loss, metrics=['mse', 'mae', 'mape'])
+    autoencoder.compile(optimizer=optimizers.Adadelta(lr=0.2), loss="mean_squared_error", metrics=['mse', 'mae', 'mape'])
     autoencoder.summary()
 
     # encoder model
@@ -67,7 +66,7 @@ def sae(train_x,
     autoencoder.fit(train_x,
                     train_x,
                     epochs=epochs,
-                    batch_size=50,
+                    batch_size=10,
                     shuffle=False,
                     validation_data=(validate_x, validate_x),
                     callbacks=callbacks)
@@ -258,9 +257,9 @@ def plot_inout(_df, name, in_name, out_name, plot_file):
     return [mape, mse]
 
 
-def study_sae():
+if __name__ == "__main__":
     # change this folder and input files
-    directory = 'C:/temp/beacon/study_20190623_201725/run_0/'
+    directory = 'C:/temp/beacon/study_20190625_103544/run_0/'
     in_train_file = directory + 'run_0_train_dwt_denoised.csv'
     in_test_file = directory + 'run_0_test_dwt_denoised.csv'
 
@@ -279,13 +278,13 @@ def study_sae():
     predicted_test_file = file_prefix + 'test_sae_decoder.csv'
 
     dimensions = {
-        '10x5': [10, 10]
+        'model_1': [10, 10]
     }
 
     for key, value in dimensions.items():
 
         config = {'hidden_dim': value,
-                  'epochs': 1000
+                  'epochs': 2000
                   }
 
         autoencoder, encoder = fit_predict(config=config,
@@ -300,7 +299,8 @@ def study_sae():
                                            test_decoder_scaled_file=predicted_scaled_test_file,
                                            test_decoder_file=predicted_test_file,
                                            loss_plot_file=file_prefix + 'plot_sae_loss.png',
-                                           chart_dir=file_prefix + 'charts/')
+                                           chart_dir=file_prefix + 'charts/',
+                                           tensorboard_dir=file_prefix + 'tensorboard/')
 
         # save model
         autoencoder.save(file_prefix + 'model_autoencoder.h5')
@@ -314,7 +314,3 @@ def study_sae():
 
         plot_comparison(file_prefix, key + '_test_original', df_in_test_data, df_out_test_data)
         plot_comparison(file_prefix, key + '_test_scaled', df_in_scaled_test_data, df_out_scaled_test_data)
-
-
-if __name__ == "__main__":
-    study_sae()

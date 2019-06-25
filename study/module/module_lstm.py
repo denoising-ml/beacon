@@ -1,19 +1,12 @@
 from typing import Dict
-
 import pandas as pd
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
-from keras import regularizers
+import keras.optimizers as optimizers
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-from tensorflow import set_random_seed
-
-set_random_seed(20190410)
-from numpy.random import seed
-
-seed(20190410)
 
 
 def lstm_model(x_train, y_train, cell_neurons, epochs, batch_size, layers):
@@ -68,7 +61,7 @@ def lstm_model(x_train, y_train, cell_neurons, epochs, batch_size, layers):
     _model.add((Dense(1)))
 
     _model.compile(loss="mean_squared_error",
-                   optimizer="adam",
+                   optimizer=optimizers.Adam(lr=0.05),
                    metrics=['mse', 'mae', 'mape'])
 
     # fit model

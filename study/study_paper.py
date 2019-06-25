@@ -20,7 +20,7 @@ def run(_filenames, _start_date, training_months, validation_months, test_months
     test_end_date = test_start_date + relativedelta(months=+test_months) - relativedelta(days=1)
 
     config = workflow.generate_config(
-        epochs=500,
+        epochs=1000,
         sae_hidden_dim=[10, 10],
         lstm_cell_neurons=8,
         lstm_time_step=4,
