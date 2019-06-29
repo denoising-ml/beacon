@@ -7,7 +7,7 @@ from keras.layers import LSTM
 import keras.optimizers as optimizers
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-
+import os
 
 def lstm_model(x_train, y_train, cell_neurons, epochs, batch_size, layers):
 
@@ -171,59 +171,64 @@ def fit_predict(
     predicted_test = predicted_test.reshape(-1)
     performance(expected_test, predicted_test)
 
-    pd.DataFrame(predicted_train).to_csv(train_predicted_file)
-    pd.DataFrame(predicted_test).to_csv(test_predicted_file)
+    pd.DataFrame(predicted_train, columns=['predict']).to_csv(train_predicted_file)
+    pd.DataFrame(predicted_test, columns=['predict']).to_csv(test_predicted_file)
 
     print('------------------ LSTM End -------------------')
     return model
 
 
+def plot(label_file, predict_file):
+    df_label = pd.read_csv(label_file)
+    df_predict = pd.read_csv(predict_file)
+
+    df_display = df_label.iloc[:, [1]].copy()
+    df_display.columns = ['actual']
+    df_display['predict'] = df_predict.iloc[:, 1].copy()
+
+    df_display.plot()
+    plt.show()
+
+
 if __name__ == "__main__":
-    df = pd.read_csv('../../data/input/HSI_figshare.csv')
-    df = df.drop(['date', 'time'], axis=1)
+    # Change directory
+    directory = 'C:/temp/beacon/study_20190628_165936/run_0/'
 
-    """
-    Prepare input and label data
-    label is the closing price in next(future) time step
-    convert to numpy array
-    """
-    df_close = df.loc[:, "close"]
-    y = df_close.iloc[1:]
+    # Training and test data
+    in_train_file = directory + 'run_0_train_lstm_input.csv'
+    in_test_file = directory + 'run_0_test_lstm_input.csv'
+    expected_train_file = directory + 'run_0_train_lstm_label.csv'
+    expected_test_file = directory + 'run_0_test_lstm_label.csv'
 
-    df_input = df
-    x = df_input.iloc[:-1]
+    # put all output files in a sub folder
+    file_prefix = directory + 'analyze_lstm/'
 
-    # split data into training and test set
-    x_train_raw, x_test_raw, y_train_raw, y_test_raw = train_test_split(x, y, train_size=0.8, shuffle=False)
+    if not os.path.exists(file_prefix):
+        os.makedirs(file_prefix)
 
-    in_train_file = '../output/encoder/tmp_in_train_data.csv'
-    expected_train_file = '../output/encoder/tmp_expected_train_data.csv'
-    predicted_train_file = '../output/encoder/tmp_predicted_train_data.csv'
-    in_test_file = '../output/encoder/tmp_in_test_data.csv'
-    expected_test_file = '../output/encoder/tmp_expected_test_data.csv'
-    predicted_test_file = '../output/encoder/tmp_predicted_test_data.csv'
+    predict_train_file = file_prefix + 'train_lstm_predict.csv'
+    predict_test_file = file_prefix + 'test_lstm_predict.csv'
 
-    pd.DataFrame(x_train_raw).to_csv(in_train_file)
-    pd.DataFrame(y_train_raw).to_csv(expected_train_file)
-    pd.DataFrame(x_test_raw).to_csv(in_test_file)
-    pd.DataFrame(y_test_raw).to_csv(expected_test_file)
+    config = {
+        'epochs': 1000,
+        'cell_neurons': 8,
+        'time_step': 4,
+        'layers': 5,
+        'batch_size': 60
+    }
 
-    config = {}
 
     fit_predict(config=config,
                 train_in_file=in_train_file,
                 train_expected_file=expected_train_file,
-                train_predicted_file=predicted_train_file,
+                train_predicted_file=predict_train_file,
                 test_in_file=in_test_file,
                 test_expected_file=expected_test_file,
-                test_predicted_file=predicted_test_file)
+                test_predicted_file=predict_test_file)
 
-    df_in_test_data = pd.read_csv(in_test_file)
-    df_out_test_data = pd.read_csv(predicted_test_file)
+    plot(expected_train_file, predict_train_file)
+    plot(expected_test_file, predict_test_file)
 
-    df_display = df_in_test_data.iloc[:, [1]].copy()
-    df_display.columns = ['in']
-    df_display['out'] = df_out_test_data.iloc[:, 1].copy()
 
-    df_display.plot()
-    plt.show()
+
+

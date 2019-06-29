@@ -72,6 +72,10 @@ class StudyFilenames:
 
         self.sae_loss_plot = self.get_filename('plot', 'sae_loss', 'png')
 
+        # LSTM inputs
+        self.train_lstm_input = self.get_train_filename('lstm_input')
+        self.test_lstm_input = self.get_test_filename('lstm_input')
+
         # LSTM label
         self.train_lstm_label = self.get_train_filename('lstm_label')
         self.test_lstm_label = self.get_test_filename('lstm_label')
@@ -135,25 +139,6 @@ def generate_config(
     return config
 
 
-def prepare_label(dataframe):
-    # Today's input data is used to predict tomorrow's close.
-    # Inputs          | Label
-    # =============================
-    # data[0]...     | close[1]
-    # data[1]...     | close[2]
-    # ...
-    # data[T-1]...   | close[T]
-
-    # The inputs, data[0] .. data[T-1]
-    df_input = dataframe.iloc[:-1]
-
-    # The label, close[1] .. close[T]
-    df_label = dataframe.loc[:, "close"]
-    df_label = df_label.iloc[1:]
-
-    return df_input, df_label
-
-
 def study_hsi(config, run_number, study_number):
     _filenames = StudyFilenames(run_number, study_number)
 
@@ -207,6 +192,9 @@ def start(_config, filenames):
     # SAE layer
     run_sae(_config, filenames)
 
+    # Prepare LSTM input
+    prepare_lstm_input(filenames)
+
     # LSTM layer
     run_lstm(_config, filenames)
 
@@ -234,7 +222,6 @@ def remove_features(_filenames):
     df_in_test.to_csv(_filenames.test_input)
 
 
-
 def run_dwt(_config, _filenames):
     dwt_config = _config['dwt_layer']
 
@@ -245,6 +232,7 @@ def run_dwt(_config, _filenames):
                       test_denoise_file=_filenames.test_dwt_denoised,
                       denoise_columns=['close', 'open', 'high', 'low'])
 
+    '''
     # Prepare LSTM label data using denoised close
     denoised_train = pd.read_csv(_filenames.train_dwt_denoised)
     denoised_test = pd.read_csv(_filenames.test_dwt_denoised)
@@ -261,6 +249,7 @@ def run_dwt(_config, _filenames):
 
     x_test.to_csv(_filenames.test_dwt_denoised, index=False)
     pd.DataFrame(y_test).to_csv(_filenames.test_lstm_label)
+    '''
 
 
 def run_sae(_config, _filenames):
@@ -286,14 +275,59 @@ def run_sae(_config, _filenames):
     encoder.save(_filenames.model_encoder)
 
 
+def prepare_lstm_input(_filenames):
+    df_train_features = pd.read_csv(_filenames.train_sae_encoder, index_col=0)
+    df_test_features = pd.read_csv(_filenames.test_sae_encoder, index_col=0)
+
+    df_train_data = pd.read_csv(_filenames.train_input)
+    df_test_data = pd.read_csv(_filenames.test_input)
+
+    assert_same_rows(df_train_features, df_train_data)
+    assert_same_rows(df_test_features, df_test_data)
+
+    # Today's features are used to predict tomorrow's close.
+    # Inputs          | Label
+    # =============================
+    # data[0]...     | close[1]
+    # data[1]...     | close[2]
+    # ...
+    # data[T-1]...   | close[T]
+
+    # remove last line from feature
+    df_train_features = df_train_features.iloc[:-1]
+    df_test_features = df_test_features.iloc[:-1]
+
+    # The label, close[1] .. close[T]
+    # the double square brackets [["close"]] are required to create a new data frame, ["close"] will create a series
+    df_train_label = df_train_data[["close"]].copy()
+    df_train_label = df_train_label.iloc[1:]
+
+    df_test_label = df_test_data[["close"]].copy()
+    df_test_label = df_test_label.iloc[1:]
+
+    assert_same_rows(df_train_features, df_train_label)
+    assert_same_rows(df_test_features, df_test_label)
+
+    # save
+    df_train_features.to_csv(_filenames.train_lstm_input)
+    df_test_features.to_csv(_filenames.test_lstm_input)
+
+    df_train_label.to_csv(_filenames.train_lstm_label)
+    df_test_label.to_csv(_filenames.test_lstm_label)
+
+
+def assert_same_rows(df1, df2):
+    assert df1.shape[0] == df2.shape[0]
+
+
 def run_lstm(_config, _filenames):
     lstm_config = _config['lstm_layer']
 
     model = lstm_layer.fit_predict(config=lstm_config,
-                                   train_in_file=_filenames.train_sae_encoder,
+                                   train_in_file=_filenames.train_lstm_input,
                                    train_expected_file=_filenames.train_lstm_label,
                                    train_predicted_file=_filenames.train_lstm_predict,
-                                   test_in_file=_filenames.test_sae_encoder,
+                                   test_in_file=_filenames.test_lstm_input,
                                    test_expected_file=_filenames.test_lstm_label,
                                    test_predicted_file=_filenames.test_lstm_predict)
 
