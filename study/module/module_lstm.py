@@ -5,11 +5,17 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
 import keras.optimizers as optimizers
-from sklearn.model_selection import train_test_split
+import json
 import matplotlib.pyplot as plt
 import os
 
-def lstm_model(x_train, y_train, cell_neurons, epochs, batch_size, layers):
+def lstm_model(x_train,
+               y_train,
+               cell_neurons,
+               epochs,
+               batch_size,
+               layers,
+               kernel_initializer='uniform'):
 
     """
     All except the last LSTMs return their full output sequences (return_sequences=True),
@@ -46,9 +52,18 @@ def lstm_model(x_train, y_train, cell_neurons, epochs, batch_size, layers):
     _model = Sequential()
 
     if layers == 1:
-        _model.add(LSTM(units=cell_neurons, input_shape=input_shape, activation='relu'))
+        _model.add(LSTM(units=cell_neurons,
+                        input_shape=input_shape,
+                        activation='relu',
+                        kernel_initializer=kernel_initializer))
+
     else:
-        _model.add(LSTM(units=cell_neurons, input_shape=input_shape, return_sequences=True, activation='relu'))
+        _model.add(LSTM(units=cell_neurons,
+                        input_shape=input_shape,
+                        return_sequences=True,
+                        activation='relu',
+                        kernel_initializer=kernel_initializer))
+
         layers -= 1
 
         if layers > 1:
@@ -61,7 +76,7 @@ def lstm_model(x_train, y_train, cell_neurons, epochs, batch_size, layers):
     _model.add((Dense(1)))
 
     _model.compile(loss="mean_squared_error",
-                   optimizer=optimizers.Adam(lr=0.05),
+                   optimizer=optimizers.Adadelta(lr=0.2),
                    metrics=['mse', 'mae', 'mape'])
 
     # fit model
@@ -192,7 +207,7 @@ def plot(label_file, predict_file):
 
 if __name__ == "__main__":
     # Change directory
-    directory = 'C:/temp/beacon/study_20190628_165936/run_0/'
+    directory = 'C:/temp/beacon/study_20190629_162057/run_0/'
 
     # Training and test data
     in_train_file = directory + 'run_0_train_lstm_input.csv'
@@ -213,10 +228,12 @@ if __name__ == "__main__":
         'epochs': 1000,
         'cell_neurons': 8,
         'time_step': 4,
-        'layers': 5,
+        'layers': 1,
         'batch_size': 60
     }
 
+    with open(file_prefix + 'config.json', 'w') as outfile:
+        json.dump(config, outfile, indent=4)
 
     fit_predict(config=config,
                 train_in_file=in_train_file,

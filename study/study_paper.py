@@ -21,10 +21,14 @@ def run(_filenames, _start_date, training_months, validation_months, test_months
 
     config = workflow.generate_config(
         epochs=1000,
-        sae_hidden_dim=[10, 10],
+        sae_hidden_dim=[15, 10],
+        sae_scaler=True,
+        sae_batch_size=17,
+        sae_learning_rate=0.07,
+        sae_loss_metric='mean_absolute_error',
         lstm_cell_neurons=8,
         lstm_time_step=4,
-        lstm_layers=5,
+        lstm_layers=1,
         lstm_batch_size=60
     )
 

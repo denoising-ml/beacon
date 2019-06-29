@@ -9,6 +9,7 @@ import sklearn.metrics as skmet
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import json
 
 
 def sae(train_x,
@@ -17,6 +18,9 @@ def sae(train_x,
         epochs,
         kernel_initializer='random_uniform',
         bias_initializer='zeros',
+        loss_metric='mean_squared_error',
+        batch_size=10,
+        learning_rate=0.05,
         tensorboard_dir=None):
 
     assert train_x.ndim == 2
@@ -47,7 +51,7 @@ def sae(train_x,
 
     # autoencoder model
     autoencoder = Model(input=input_dim, output=last_decoded_layer)
-    autoencoder.compile(optimizer=optimizers.Adadelta(lr=0.2), loss="mean_squared_error", metrics=['mse', 'mae', 'mape'])
+    autoencoder.compile(optimizer=optimizers.Adadelta(lr=learning_rate), loss=loss_metric, metrics=['mse', 'mae', 'mape'])
     autoencoder.summary()
 
     # encoder model
@@ -66,7 +70,7 @@ def sae(train_x,
     autoencoder.fit(train_x,
                     train_x,
                     epochs=epochs,
-                    batch_size=10,
+                    batch_size=batch_size,
                     shuffle=False,
                     validation_data=(validate_x, validate_x),
                     callbacks=callbacks)
@@ -106,19 +110,19 @@ def fit_predict(
     # normalize data if required
     if apply_scaler:
         # fit scaler using training data
-        scaler = preprocessing.MinMaxScaler()
+        scaler = preprocessing.StandardScaler()
         scaler.fit(df_in_train)
 
         # transform data
-        in_train_scaled = scaler.transform(df_in_train)
-        in_test_scaled = scaler.transform(df_in_test)
+        _in_train_scaled = scaler.transform(df_in_train)
+        _in_test_scaled = scaler.transform(df_in_test)
 
         scaler_train = scaler
         scaler_test = scaler
 
         # create data frame from numpy array
-        df_in_train_scaled = pd.DataFrame(data=in_train_scaled, columns=column_names)
-        df_in_test_scaled = pd.DataFrame(data=in_test_scaled, columns=column_names)
+        df_in_train_scaled = pd.DataFrame(data=_in_train_scaled, columns=column_names)
+        df_in_test_scaled = pd.DataFrame(data=_in_test_scaled, columns=column_names)
     else:
         df_in_train_scaled = df_in_train
         df_in_test_scaled = df_in_test
@@ -130,16 +134,22 @@ def fit_predict(
 
     hidden_dim = config.get('hidden_dim', [16, 8])
     epochs = config.get('epochs', 1000)
+    loss_metric = config.get('loss_metric', 'mean_squared_error')
+    batch_size = config.get('batch_size', 10)
+    learning_rate = config.get('learning_rate', 0.2)
 
-    autoencoder, encoder = sae(train_x=in_train_scaled,
-                               validate_x=in_test_scaled,
+    autoencoder, encoder = sae(train_x=df_in_train_scaled,
+                               validate_x=df_in_test_scaled,
                                epochs=epochs,
                                hidden_dimensions=hidden_dim,
+                               loss_metric=loss_metric,
+                               batch_size=batch_size,
+                               learning_rate=learning_rate,
                                tensorboard_dir=tensorboard_dir)
 
     # get decoder output
-    out_decoder_train_scaled = autoencoder.predict(in_train_scaled)
-    out_decoder_test_scaled = autoencoder.predict(in_test_scaled)
+    out_decoder_train_scaled = autoencoder.predict(df_in_train_scaled)
+    out_decoder_test_scaled = autoencoder.predict(df_in_test_scaled)
 
     # create data frame for decoder output
     df_out_decoder_train_scaled = pd.DataFrame(data=out_decoder_train_scaled, columns=column_names)
@@ -166,8 +176,8 @@ def fit_predict(
     df_out_test.to_csv(test_decoder_file)
 
     # get encoder output
-    out_encoder_train = encoder.predict(in_train_scaled)
-    out_encoder_test = encoder.predict(in_test_scaled)
+    out_encoder_train = encoder.predict(df_in_train_scaled)
+    out_encoder_test = encoder.predict(df_in_test_scaled)
 
     # save encoder output
     pd.DataFrame(out_encoder_train).to_csv(train_encoder_file)
@@ -193,23 +203,40 @@ def fit_predict(
 
 
 def plot_loss(model, loss_plot_file):
-    # training loss
+    # training and validation loss
     loss = model.history.history['loss']
-
-    # validation loss
     val_loss = model.history.history['val_loss']
 
-    figure = plt.gcf()
-    figure.clf()
+    fig, axs = plt.subplots(4)
 
-    plt.plot(range(len(loss)), loss, 'bo', label='Training loss')
-    plt.plot(range(len(val_loss)), val_loss, 'r+', label='Validation loss')
-    plt.title('Training and validation loss')
-    plt.legend()
+    axs[0].plot(range(len(loss)), loss, 'bo', label='Training')
+    axs[0].plot(range(len(val_loss)), val_loss, 'r+', label='Validation')
+    axs[0].set_title('loss')
+    axs[0].legend()
+
+    loss = model.history.history['mean_absolute_percentage_error']
+    val_loss = model.history.history['val_mean_absolute_percentage_error']
+
+    axs[1].plot(range(len(loss)), loss, 'bo', label='Training')
+    axs[1].plot(range(len(val_loss)), val_loss, 'r+', label='Validation')
+    axs[1].set_title('mean absolute percentage error')
+    axs[1].legend()
+
+    loss = model.history.history['mean_squared_error']
+    val_loss = model.history.history['val_mean_squared_error']
+    axs[2].plot(range(len(loss)), loss, 'bo', label='Training')
+    axs[2].plot(range(len(val_loss)), val_loss, 'r+', label='Validation')
+    axs[2].set_title('mean squared error')
+    axs[2].legend()
+
+    loss = model.history.history['mean_absolute_error']
+    val_loss = model.history.history['val_mean_absolute_error']
+    axs[3].plot(range(len(loss)), loss, 'bo', label='Training')
+    axs[3].plot(range(len(val_loss)), val_loss, 'r+', label='Validation')
+    axs[3].set_title('mean absolute error')
+    axs[3].legend()
 
     plt.savefig(loss_plot_file)
-    figure.clf()
-    # plt.show()
 
 
 def plot_comparison(directory, key, df_in, df_out):
@@ -259,7 +286,7 @@ def plot_inout(_df, name, in_name, out_name, plot_file):
 
 if __name__ == "__main__":
     # change this folder and input files
-    directory = 'C:/temp/beacon/study_20190625_103544/run_0/'
+    directory = 'C:/temp/beacon/study_20190629_162057/run_0/'
     in_train_file = directory + 'run_0_train_dwt_denoised.csv'
     in_test_file = directory + 'run_0_test_dwt_denoised.csv'
 
@@ -278,14 +305,20 @@ if __name__ == "__main__":
     predicted_test_file = file_prefix + 'test_sae_decoder.csv'
 
     dimensions = {
-        'model_1': [10, 10]
+        'model_1': [15, 10]
     }
 
     for key, value in dimensions.items():
 
         config = {'hidden_dim': value,
-                  'epochs': 2000
+                  'epochs': 1000,
+                  'loss_metric': 'mean_absolute_error',
+                  'batch_size': 17,
+                  'learning_rate': 0.07
                   }
+
+        with open(file_prefix + 'config.json', 'w') as outfile:
+            json.dump(config, outfile, indent=4)
 
         autoencoder, encoder = fit_predict(config=config,
                                            train_in_file=in_train_file,

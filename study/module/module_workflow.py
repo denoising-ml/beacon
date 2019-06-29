@@ -106,6 +106,10 @@ class StudyFilenames:
 def generate_config(
         epochs=1000,
         sae_hidden_dim=None,
+        sae_scaler=True,
+        sae_loss_metric='mean_squared_error',
+        sae_learning_rate=0.2,
+        sae_batch_size=10,
         lstm_cell_neurons=10,
         lstm_time_step=3,
         lstm_layers=1,
@@ -122,6 +126,10 @@ def generate_config(
         'sae_layer': {
             'hidden_dim': sae_hidden_dim,
             'epochs': epochs,
+            'scaler': sae_scaler,
+            'loss_metric': sae_loss_metric,
+            'learning_rate': sae_learning_rate,
+            'batch_size': sae_batch_size
         },
         'lstm_layer': {
             'epochs': epochs,
