@@ -16,6 +16,7 @@ def sae(train_x,
         validate_x,
         hidden_dimensions,
         epochs,
+        hidden_activation='relu',
         kernel_initializer='random_uniform',
         bias_initializer='zeros',
         loss_metric='mean_squared_error',
@@ -34,7 +35,7 @@ def sae(train_x,
     last_encoded_layer = input_dim
     for hidden_dim in hidden_dimensions:
         last_encoded_layer = Dense(hidden_dim,
-                                   activation='relu',
+                                   activation=hidden_activation,
                                    kernel_initializer=kernel_initializer,
                                    bias_initializer=bias_initializer)(last_encoded_layer)
 
@@ -42,7 +43,7 @@ def sae(train_x,
     last_decoded_layer = last_encoded_layer
     for hidden_dim in reversed(hidden_dimensions[:-1]):
         last_decoded_layer = Dense(hidden_dim,
-                                   activation='relu',
+                                   activation=hidden_activation,
                                    kernel_initializer=keras.initializers.Constant(value=0.1),
                                    bias_initializer='zeros')(last_decoded_layer)
 
@@ -137,11 +138,13 @@ def fit_predict(
     loss_metric = config.get('loss_metric', 'mean_squared_error')
     batch_size = config.get('batch_size', 10)
     learning_rate = config.get('learning_rate', 0.2)
+    hidden_activation = config.get('hidden_activation', 'relu')
 
     autoencoder, encoder = sae(train_x=df_in_train_scaled,
                                validate_x=df_in_test_scaled,
-                               epochs=epochs,
                                hidden_dimensions=hidden_dim,
+                               epochs=epochs,
+                               hidden_activation=hidden_activation,
                                loss_metric=loss_metric,
                                batch_size=batch_size,
                                learning_rate=learning_rate,

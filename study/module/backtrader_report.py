@@ -15,7 +15,7 @@ class BacktraderReport():
         summary_fig = plt.figure()
         summary_fig = plt.figure(figsize=(16, 5))
 
-        summary_fig.suptitle('UOB DeepCroc - Summary', fontsize=16)
+        summary_fig.suptitle('Trading Performance - Summary', fontsize=16)
         sharpe_ratio = strategy.analyzers.getbyname('sharperatio').get_analysis()['sharperatio']
         vwr = strategy.analyzers.getbyname('vwr').get_analysis()['vwr']
         sqn = strategy.analyzers.getbyname('sqn').get_analysis()

@@ -5,6 +5,7 @@ from backtrader.feeds import GenericCSVData
 from study.module.backtrader_report import BacktraderReport
 from study.module.pyfolio_analyzer import PyfolioAnalyzer
 from study.module.pyfolio_report import PyfolioReport
+import os
 
 
 class GenericCSVWithSignal(GenericCSVData):
@@ -70,7 +71,8 @@ def run_backtrader(
         config: Dict,
         backtrader_mkt_data_file: str,
         backtrader_plot_file: str = None,
-        pyfolio_plot_file: str = None):
+        pyfolio_plot_file: str = None,
+        pyfolio_dir: str = None):
 
     print('------------------ Backtrader Start -------------------')
 
@@ -107,6 +109,18 @@ def run_backtrader(
     strats = cerebro.run()
     strategy = strats[0]
 
+    if pyfolio_dir is not None:
+        # Pyfolio output in csv format
+        if not os.path.exists(pyfolio_dir):
+            os.makedirs(pyfolio_dir)
+
+        pyfoliozer = strategy.analyzers.getbyname('pyfolio')
+        returns, positions, transactions, gross_lev = pyfoliozer.get_pf_items()
+        returns.to_csv(pyfolio_dir + '/returns.csv')
+        positions.to_csv(pyfolio_dir + '/positions.csv')
+        transactions.to_csv(pyfolio_dir + '/transactions.csv')
+        gross_lev.to_csv(pyfolio_dir + '/gross_leverage.csv')
+
     # Print out the final result
     print('Final Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
 
@@ -126,9 +140,11 @@ def run_backtrader(
 if __name__ == "__main__":
     config = {
     }
-    file_dir = '../output/study_sample/'
+
+    directory = 'C:/temp/beacon/study_20190901_172240/run_0/'
 
     run_backtrader(config=config,
-                   backtrader_mkt_data_file=file_dir + 'run_1_backtrader_mktdata.csv',
-                   backtrader_plot_file=file_dir + 'backtrader_report.pdf',
-                   pyfolio_plot_file=file_dir + 'pyfolio_report.pdf')
+                   backtrader_mkt_data_file=directory + 'run_0_backtrader_mktdata.csv',
+                   backtrader_plot_file=directory + 'backtrader_report.pdf',
+                   pyfolio_plot_file=directory + 'pyfolio_report.pdf',
+                   pyfolio_dir=directory + 'pyfolio')

@@ -26,6 +26,7 @@ def run(_filenames, _start_date, training_months, validation_months, test_months
         sae_batch_size=17,
         sae_learning_rate=0.07,
         sae_loss_metric='mean_absolute_error',
+        sae_hidden_activation='linear',
         lstm_cell_neurons=8,
         lstm_time_step=4,
         lstm_layers=1,

@@ -9,6 +9,7 @@ from matplotlib import pyplot
 import nolds
 from scipy import stats
 
+
 def visualise(_series):
     fig, axes = pyplot.subplots(nrows=2, ncols=3)
 

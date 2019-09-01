@@ -110,6 +110,7 @@ def generate_config(
         sae_loss_metric='mean_squared_error',
         sae_learning_rate=0.2,
         sae_batch_size=10,
+        sae_hidden_activation='relu',
         lstm_cell_neurons=10,
         lstm_time_step=3,
         lstm_layers=1,
@@ -126,6 +127,7 @@ def generate_config(
         'sae_layer': {
             'hidden_dim': sae_hidden_dim,
             'epochs': epochs,
+            'hidden_activation': sae_hidden_activation,
             'scaler': sae_scaler,
             'loss_metric': sae_loss_metric,
             'learning_rate': sae_learning_rate,
