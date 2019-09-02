@@ -28,7 +28,7 @@ def compute_threshold(coeffs):
     return sigma * math.sqrt(2 * math.log(len(coeffs)))
 
 
-def dwt_denoise(data: pd.Series, label: str, levels: int, mode: str):
+def dwt_denoise(data: pd.Series, levels: int, mode: str):
     """
     De-noise a time series using discrete wavelet transform
 
@@ -52,10 +52,7 @@ def dwt_denoise(data: pd.Series, label: str, levels: int, mode: str):
         # soft threshold on wavelet coefficients
         threshold_coeffs[i] = pywt.threshold(coeffs, threshold, mode=mode)
 
-    # np.savetxt("output/dwt/thresholded_dwt_coeffs_{}.txt".format(label), threshold_coeffs, fmt='%s')
     # reconstruct data using thresholded coefficients
-    # print(pywt.waverec(threshold_coeffs, 'haar'))
-    # print(len(pywt.waverec(threshold_coeffs, 'haar')))
     return pywt.waverec(threshold_coeffs, 'haar')
 
 
@@ -100,11 +97,7 @@ def denoise_dataframe(_df, _work_columns, _levels, _mode):
 
     for column in _df.columns:
         if column in _work_columns:
-            series = pd.Series(dwt_denoise(data=_df[column],
-                                           label=column,
-                                           levels=_levels,
-                                           mode=_mode))
-
+            series = pd.Series(dwt_denoise(data=_df[column], levels=_levels, mode=_mode))
             _df_target = pd.concat([_df_target, series.rename(column)], axis=1)
         else:
             _df_target[column] = pd.Series(_df[column].values)
