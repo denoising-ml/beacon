@@ -157,4 +157,5 @@ if __name__ == "__main__":
     backtrader.run_backtrader(None,
                               master_file,
                               file_names.root + '/master_backtrader.pdf',
-                              file_names.root + '/master_pyfolio.pdf')
+                              file_names.root + '/master_pyfolio.pdf',
+                              file_names.root + '/pyfolio')

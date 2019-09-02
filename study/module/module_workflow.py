@@ -102,6 +102,9 @@ class StudyFilenames:
         # SAE comparison charts directory
         self.chart_sae = self.get_directory('chart_sae')
 
+        # Pyfolio analytics output directory
+        self.pyfolio_dir = self.get_directory('pyfolio')
+
 
 def generate_config(
         epochs=1000,
@@ -361,7 +364,8 @@ def run_backtrader(_config, _filenames):
     backtrader_layer.run_backtrader(config=backtrader_config,
                                     backtrader_mkt_data_file=_filenames.backtrader_mktdata,
                                     backtrader_plot_file=_filenames.plot_backtrader,
-                                    pyfolio_plot_file=_filenames.plot_pyfolio)
+                                    pyfolio_plot_file=_filenames.plot_pyfolio,
+                                    pyfolio_dir=_filenames.pyfolio_dir)
 
     # Plot graphs for manual visual verification
     df_in_test_data = pd.read_csv(_filenames.test_input)
