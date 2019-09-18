@@ -27,14 +27,14 @@ class StudyFilenames:
     def get_directory(self, folder):
         return '{}/{}/'.format(self.directory, folder)
 
-    def __init__(self, run_number, study_number):
+    def __init__(self, run_number, study_number, repeat_number=1):
         self.run_number = run_number
         self.study_number = study_number
 
         # Create dir is not exist
         self.root = 'c:/temp/beacon/study_{}'.format(study_number)
 
-        self.directory = self.root + '/run_{}'.format(run_number)
+        self.directory = self.root + '/run_{}_{}'.format(run_number, repeat_number)
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
 
@@ -102,7 +102,7 @@ class StudyFilenames:
         # SAE comparison charts directory
         self.chart_sae = self.get_directory('chart_sae')
 
-        # Pyfolio analytics output directory
+        # Pyfolio directory
         self.pyfolio_dir = self.get_directory('pyfolio')
 
 
@@ -348,7 +348,7 @@ def run_lstm(_config, _filenames):
     model.save(_filenames.model_lstm)
 
 
-def run_backtrader(_config, _filenames):
+def run_backtrader(_config, _filenames: StudyFilenames):
     matplotlib.use('Agg')
 
     pre_backtrader_config = _config['pre_backtrader_layer']

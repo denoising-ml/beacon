@@ -111,8 +111,8 @@ def denoise(
                                                                levels,
                                                                mode)
 
-    # take only the last N rows of data, which belongs to test set
-    df_denoise_test = df_denoise_test.tail(len(df_in_test))
+        # take only the last N rows of data, which belongs to test set
+        df_denoise_test = df_denoise_test.tail(len(df_in_test))
 
     print('Denoise train: {} {}'.format(train_denoise_file, df_denoise_train.shape))
     print('Denoise test: {} {}'.format(test_denoise_file, df_denoise_test.shape))
