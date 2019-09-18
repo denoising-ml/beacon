@@ -95,7 +95,7 @@ def drop_unuse_column(_df):
 
 
 def gen_paper_config():
-    return gen_config(datetime(2008, 7, 1), 2*12, 3, 3, 4)
+    return gen_config(datetime(2008, 7, 1), 2*12, 3, 3, 1)
 
 
 def gen_one_config():

@@ -175,7 +175,7 @@ def fit_predict(
     df_out_train = pd.DataFrame(data=out_train, columns=column_names)
     df_out_train.to_csv(train_decoder_file)
 
-    df_out_test = pd.DataFrame(data=out_test, columns=column_names)
+    df_out_test = pd.DataFrame(data=out_test, columns=column_names, index=df_in_test.index)
     df_out_test.to_csv(test_decoder_file)
 
     # get encoder output
@@ -256,7 +256,11 @@ def plot_comparison(directory, key, df_in, df_out):
         # create two columns of in and out data
         df_display = df_in.iloc[:, [column]].copy()
         df_display.columns = [column_name_in]
-        df_display[column_name_out] = df_out.iloc[:, column].copy()
+        out_data = df_out.iloc[:, column].copy()
+        df_display[column_name_out] = out_data
+
+        if df_display.isnull().values.any():
+            print("Nan detected in extracting column " + column)
 
         # plot
         plot_file = directory + key + '_' + column_name + '.png'
@@ -270,6 +274,11 @@ def plot_inout(_df, name, in_name, out_name, plot_file):
 
     in_column = _df[in_name]
     out_column = _df[out_name]
+
+    if in_column.isnull().values.any():
+        print("Nan detected in input column when producing " + plot_file)
+    elif out_column.isnull().values.any():
+        print("Nan detected in output column when producing " + plot_file)
 
     # compute losses between in and out scaled features
     mape = skmet.mean_absolute_error(in_column, out_column)

@@ -4,12 +4,13 @@ import pywt
 import pandas as pd
 from statsmodels import robust
 import math
-
+import numpy as np
 
 '''
 Boundary problem and data leakage: a caveat for wavelet based forecasting:
 https://www.jcer.or.jp/jcer_download_log.php?post_id=38552&file_post_id=38554
 '''
+
 
 def compute_threshold(coeffs):
     """
@@ -56,13 +57,28 @@ def dwt_denoise(data: pd.Series, levels: int, mode: str):
     return pywt.waverec(threshold_coeffs, 'haar')
 
 
+def dwt_denoise_moving_window(_data_array, _window_size, _levels, _mode):
+    _num_data = len(_data_array)
+    _output = np.zeros(_num_data)
+    _output[0:_window_size] = dwt_denoise(_data_array[0:_window_size], _levels, _mode)
+
+    for i in range(_window_size, _num_data):
+        from_index = i - _window_size + 1
+        to_index = i + 1
+        tmp_series = dwt_denoise(_data_array[from_index:to_index], _levels, _mode)
+        _output[i] = tmp_series[-1]
+
+    return _output
+
+
 def denoise(
         config: Dict,
         train_in_file: str,
         train_denoise_file: str,
         test_in_file: str,
         test_denoise_file: str,
-        denoise_columns: List = None):
+        denoise_columns: List = None,
+        test_cheat: bool = False):
 
     assert denoise_columns is not None
 
@@ -83,7 +99,20 @@ def denoise(
 
     df_denoise_train = denoise_dataframe(df_in_train, denoise_columns, levels, mode)
 
-    df_denoise_test = denoise_dataframe(df_in_test, denoise_columns, levels, mode)
+    # denoise test set with moving window to prevent future leak
+    if test_cheat:
+        df_denoise_test = denoise_dataframe(df_in_test, denoise_columns, levels, mode)
+    else:
+        df_in_combine = pd.concat([df_in_train, df_in_test])
+        window_size = len(df_in_train)
+        df_denoise_test = denoise_dataframe_with_moving_window(df_in_combine,
+                                                               denoise_columns,
+                                                               window_size,
+                                                               levels,
+                                                               mode)
+
+    # take only the last N rows of data, which belongs to test set
+    df_denoise_test = df_denoise_test.tail(len(df_in_test))
 
     print('Denoise train: {} {}'.format(train_denoise_file, df_denoise_train.shape))
     print('Denoise test: {} {}'.format(test_denoise_file, df_denoise_test.shape))
@@ -101,6 +130,21 @@ def denoise_dataframe(_df, _work_columns, _levels, _mode):
             _df_target = pd.concat([_df_target, series.rename(column)], axis=1)
         else:
             _df_target[column] = pd.Series(_df[column].values)
+
+    return _df_target
+
+
+def denoise_dataframe_with_moving_window(_df, _work_columns, _window_size, _levels, _mode):
+    # create an empty data frame
+    _df_target = pd.DataFrame(index=_df.index)
+
+    for column in _df.columns:
+        if column in _work_columns:
+            _data = dwt_denoise_moving_window(_df[column], _window_size, _levels, _mode)
+            series = pd.Series(_data, index=_df.index)
+            _df_target = pd.concat([_df_target, series.rename(column)], axis=1)
+        else:
+            _df_target[column] = _df[column].copy()
 
     return _df_target
 
