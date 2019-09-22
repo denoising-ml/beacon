@@ -201,6 +201,11 @@ def fit_predict(
         plot_comparison(chart_dir, 'test_scaled', df_in_test_scaled, df_out_decoder_test_scaled)
         plot_comparison(chart_dir, 'test_original', df_in_test, df_out_test)
 
+    # save model
+    if tensorboard_dir is not None:
+        autoencoder.save(tensorboard_dir + '/model_autoencoder.h5')
+        encoder.save(tensorboard_dir + '/model_encoder.h5')
+
     print('------------------ SAE End ----------------------')
     return autoencoder, encoder
 
@@ -242,10 +247,12 @@ def plot_loss(model, loss_plot_file):
     plt.savefig(loss_plot_file)
 
 
-def plot_comparison(directory, key, df_in, df_out):
+def plot_comparison(_directory, _key, df_in, df_out):
     column_names = df_in.columns
 
     total_loss = [0, 0]
+
+    df_losses = pd.DataFrame(columns=['feature', 'mape', 'mse'])
 
     # skip first index column
     for column in range(len(column_names)):
@@ -263,11 +270,17 @@ def plot_comparison(directory, key, df_in, df_out):
             print("Nan detected in extracting column " + column)
 
         # plot
-        plot_file = directory + key + '_' + column_name + '.png'
-        losses = plot_inout(df_display, column_name, column_name_in, column_name_out, plot_file)
-        total_loss = np.vstack((total_loss, losses))
+        plot_file = _directory + _key + '_' + column_name + '.png'
+        mape, mse = plot_inout(df_display, column_name, column_name_in, column_name_out, plot_file)
+        total_loss = np.vstack((total_loss, [mape, mse]))
 
-    print('Total loss on data {}: {}'.format(key, np.sum(total_loss, axis=0)))
+        # append to data frame
+        df_losses = df_losses.append({'feature': column_names[column], 'mape': mape, 'mse': mse}, ignore_index=True)
+
+    # save losses to csv
+    df_losses.to_csv(_directory + _key + '_losses.csv')
+
+    print('Total loss on data {}: {}'.format(_key, np.sum(total_loss, axis=0)))
 
 
 def plot_inout(_df, name, in_name, out_name, plot_file):
@@ -298,7 +311,7 @@ def plot_inout(_df, name, in_name, out_name, plot_file):
 
 if __name__ == "__main__":
     # change this folder and input files
-    directory = 'C:/temp/beacon/study_20190629_162057/run_0/'
+    directory = 'C:/temp/beacon/study_20190922_142437/repeat_1/run_0/'
     in_train_file = directory + 'run_0_train_dwt_denoised.csv'
     in_test_file = directory + 'run_0_test_dwt_denoised.csv'
 
@@ -346,16 +359,3 @@ if __name__ == "__main__":
                                            loss_plot_file=file_prefix + 'plot_sae_loss.png',
                                            chart_dir=file_prefix + 'charts/',
                                            tensorboard_dir=file_prefix + 'tensorboard/')
-
-        # save model
-        autoencoder.save(file_prefix + 'model_autoencoder.h5')
-        encoder.save(file_prefix + 'model_encoder.h5')
-
-        # Plot predicted vs actual using test data
-        df_in_test_data = pd.read_csv(in_test_file)
-        df_in_scaled_test_data = pd.read_csv(in_scaled_test_file)
-        df_out_scaled_test_data = pd.read_csv(predicted_scaled_test_file)
-        df_out_test_data = pd.read_csv(predicted_test_file)
-
-        plot_comparison(file_prefix, key + '_test_original', df_in_test_data, df_out_test_data)
-        plot_comparison(file_prefix, key + '_test_scaled', df_in_scaled_test_data, df_out_scaled_test_data)

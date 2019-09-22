@@ -8,6 +8,8 @@ import keras.optimizers as optimizers
 import json
 import matplotlib.pyplot as plt
 import os
+import keras
+
 
 def lstm_model(x_train,
                y_train,
@@ -15,7 +17,8 @@ def lstm_model(x_train,
                epochs,
                batch_size,
                layers,
-               kernel_initializer='uniform'):
+               kernel_initializer='uniform',
+               tensorboard_dir=None):
 
     """
     All except the last LSTMs return their full output sequences (return_sequences=True),
@@ -79,11 +82,21 @@ def lstm_model(x_train,
                    optimizer=optimizers.Adadelta(lr=0.2),
                    metrics=['mse', 'mae', 'mape'])
 
+    # callbacks
+    callbacks = []
+    if tensorboard_dir is not None:
+        tbCallBack = keras.callbacks.TensorBoard(log_dir=tensorboard_dir,
+                                                 histogram_freq=0,
+                                                 write_graph=True,
+                                                 write_images=True)
+        callbacks.append(tbCallBack)
+
     # fit model
     _model.fit(x_train,
                y_train,
                epochs=epochs,
-               batch_size=batch_size)
+               batch_size=batch_size,
+               callbacks=callbacks)
 
     return _model
 
@@ -136,7 +149,9 @@ def fit_predict(
         train_predicted_file: str,
         test_in_file: str,
         test_expected_file: str,
-        test_predicted_file: str):
+        test_predicted_file: str,
+        tensorboard_dir: str = None):
+
     print('------------------ LSTM Start -------------------')
     df_in_train = pd.read_csv(train_in_file, index_col=0).values
     df_expected_train = pd.read_csv(train_expected_file, index_col=0).values
@@ -172,7 +187,8 @@ def fit_predict(
                        cell_neurons=cell_neurons,
                        epochs=epochs,
                        batch_size=batch_size,
-                       layers=layers)
+                       layers=layers,
+                       tensorboard_dir=tensorboard_dir)
 
     history = model.history
 
@@ -188,6 +204,10 @@ def fit_predict(
 
     pd.DataFrame(predicted_train, columns=['predict']).to_csv(train_predicted_file)
     pd.DataFrame(predicted_test, columns=['predict']).to_csv(test_predicted_file)
+
+    # save model
+    if tensorboard_dir is not None:
+        model.save(tensorboard_dir + '/model_lstm.h5')
 
     print('------------------ LSTM End -------------------')
     return model

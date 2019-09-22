@@ -32,9 +32,10 @@ class StudyFilenames:
         self.study_number = study_number
 
         # Create dir is not exist
-        self.root = 'c:/temp/beacon/study_{}'.format(study_number)
+        self.study_root = 'c:/temp/beacon/study_{}'.format(study_number)
+        self.root = self.study_root + '/repeat_{}'.format(repeat_number)
 
-        self.directory = self.root + '/run_{}_{}'.format(run_number, repeat_number)
+        self.directory = self.root + '/run_{}'.format(run_number)
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
 
@@ -124,8 +125,9 @@ def generate_config(
 
     config = {
         'dwt_layer': {
+            'apply_dwt': True,
             'dwt_levels': 4,
-            'dwt_mode': 'hard'
+            'dwt_mode': 'hard',
         },
         'sae_layer': {
             'hidden_dim': sae_hidden_dim,
@@ -342,7 +344,8 @@ def run_lstm(_config, _filenames):
                                    train_predicted_file=_filenames.train_lstm_predict,
                                    test_in_file=_filenames.test_lstm_input,
                                    test_expected_file=_filenames.test_lstm_label,
-                                   test_predicted_file=_filenames.test_lstm_predict)
+                                   test_predicted_file=_filenames.test_lstm_predict,
+                                   tensorboard_dir=_filenames.tensorboard_lstm)
 
     # save model
     model.save(_filenames.model_lstm)

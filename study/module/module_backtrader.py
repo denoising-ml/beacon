@@ -94,6 +94,8 @@ def run_backtrader(
     cerebro.broker.setcash(1000000.0)
     # Set the commission
     cerebro.broker.setcommission(commission=0.0)
+
+    start_value = cerebro.broker.getvalue()
     # Print out the starting conditions
     print('Starting Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
 
@@ -124,6 +126,8 @@ def run_backtrader(
     # Print out the final result
     print('Final Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
 
+    end_value = cerebro.broker.getvalue()
+
     if backtrader_plot_file is not None:
         # Backtrader report
         BacktraderReport().run_report(strategy=strategy, outfilename=backtrader_plot_file)
@@ -135,6 +139,8 @@ def run_backtrader(
     # cerebro.plot()
 
     print('------------------ Backtrader End -------------------')
+
+    return start_value, end_value
 
 
 if __name__ == "__main__":

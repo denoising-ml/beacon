@@ -3,9 +3,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import study.module.module_utils as utils
 import study.module.module_backtrader as backtrader
-import pandas as pd
 import matplotlib.pyplot as plt
-from study_paper import run
+from study.study_paper import run
 
 
 def gen_paper_config():
@@ -18,7 +17,7 @@ def gen_one_config():
                       validation_months=3,
                       test_months=3,
                       runs=1,
-                      repeats=100)
+                      repeats=50)
 
 
 def gen_config(start_date, training_months, validation_months, test_months, runs, repeats: int = 1):
@@ -35,54 +34,45 @@ def gen_config(start_date, training_months, validation_months, test_months, runs
 
 def run_study():
 
-    # df = datasets.load_HSI()
-
     # config = gen_paper_config()
     config = gen_one_config()
 
     study_number = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-    trading_files = []
-    pyfolio_dirs = []
-
-    start_date = config.start_date
+    returns = []
 
     # go through each run period
-    for i in range(config.runs):
-        for j in range(config.repeats):
-            print('run_{}_{}'.format(i, j))
+    for rep_count in range(config.repeats):
+        trading_files = []
+        start_date = config.start_date
+
+        for run_count in range(config.runs):
+            print('repeat_{}/run_{}'.format(rep_count, run_count))
 
             # generate file names config
-            file_names = workflow.StudyFilenames(run_number=i, study_number=study_number, repeat_number=j)
+            file_names = workflow.StudyFilenames(run_number=run_count, study_number=study_number, repeat_number=rep_count)
 
             run(file_names, start_date, config.training_months, config.validation_months, config.test_months)
 
-            # collect file name of backtrader market data file
-            pyfolio_dirs.append(file_names.pyfolio_dir)
+            # only use the last repetition to build the overall backtest
+            # this can be changed, no specific reason last run is chosen
+            trading_files.append(file_names.backtrader_mktdata)
 
-        # only use the last repetition to build the overall backtest
-        # this can be changed, no specific reason last run is chosen
-        trading_files.append(file_names.backtrader_mktdata)
+            # move to next training start date
+            start_date = start_date + relativedelta(months=+3)
 
-        # move to next training start date
-        start_date = start_date + relativedelta(months=+3)
+        start_value, end_value = run_backtrader_for_all_runs(root_dir=file_names.root, trading_files=trading_files)
+        returns.append((end_value - start_value)/start_value)
 
-    run_backtrader_for_all_runs(root_dir=file_names.root, trading_files=trading_files)
-
-    gen_stats_for_all_runs(root_dir=file_names.root, pyfolio_dirs=pyfolio_dirs)
+    gen_stats_for_all_runs(study_dir=file_names.study_root, returns=returns)
 
 
-def gen_stats_for_all_runs(root_dir: str, pyfolio_dirs: list):
+def gen_stats_for_all_runs(study_dir: str, returns: list):
     print('------------------ Overall Stats Start -------------------')
-
-    returns = []
-    for pyfolio_dir in pyfolio_dirs:
-        df_returns = pd.read_csv(pyfolio_dir + '/returns.csv', index_col=0)
-        returns.append(df_returns.sum()[0])
 
     plt.gcf().clf()
     plt.hist(returns)
-    plt.gcf().savefig(root_dir + '/overall_returns.png')
+    plt.gcf().savefig(study_dir + '/overall_returns.png')
 
     print('------------------ Overall Stats End -------------------')
 
@@ -104,10 +94,10 @@ def run_backtrader_for_all_runs(root_dir: str, trading_files: list):
                     outfile.write(line)
 
     # calculate overall performance
-    backtrader.run_backtrader(None,
-                              master_file,
-                              root_dir + '/master_backtrader.pdf',
-                              root_dir + '/master_pyfolio.pdf')
+    return backtrader.run_backtrader(None,
+                                     master_file,
+                                     root_dir + '/master_backtrader.pdf',
+                                     root_dir + '/master_pyfolio.pdf')
 
 
 if __name__ == "__main__":
