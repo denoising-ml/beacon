@@ -39,8 +39,8 @@ def gen_config(start_date, training_months, validation_months, test_months, runs
 
 def run_study():
 
-    config = gen_paper_config()
-    #config = gen_one_config()
+    #config = gen_paper_config()
+    config = gen_one_config()
 
     study_number = datetime.now().strftime('%Y%m%d_%H%M%S')
 
