@@ -150,7 +150,8 @@ def fit_predict(
         test_in_file: str,
         test_expected_file: str,
         test_predicted_file: str,
-        tensorboard_dir: str = None):
+        tensorboard_dir: str = None,
+        model_store_dir: str = None):
 
     print('------------------ LSTM Start -------------------')
     df_in_train = pd.read_csv(train_in_file, index_col=0).values
@@ -208,6 +209,9 @@ def fit_predict(
     # save model
     if tensorboard_dir is not None:
         model.save(tensorboard_dir + '/model_lstm.h5')
+
+    if model_store_dir is not None:
+        model.save(model_store_dir + '/model_lstm.h5')
 
     print('------------------ LSTM End -------------------')
     return model

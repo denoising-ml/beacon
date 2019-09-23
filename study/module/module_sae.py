@@ -93,8 +93,8 @@ def fit_predict(
         test_decoder_file: str,                 # test     - decoded features (in original scale)
         loss_plot_file: str = None,
         tensorboard_dir: str = None,
-        chart_dir: str = None
-):
+        chart_dir: str = None,
+        model_store_dir: str = None):
 
     print('------------------ SAE Start --------------------')
     df_in_train = pd.read_csv(train_in_file, index_col=0)
@@ -205,6 +205,11 @@ def fit_predict(
     if tensorboard_dir is not None:
         autoencoder.save(tensorboard_dir + '/model_autoencoder.h5')
         encoder.save(tensorboard_dir + '/model_encoder.h5')
+
+    # save to store
+    if model_store_dir is not None:
+        autoencoder.save(model_store_dir + '/model_autoencoder.h5')
+        encoder.save(model_store_dir + '/model_encoder.h5')
 
     print('------------------ SAE End ----------------------')
     return autoencoder, encoder

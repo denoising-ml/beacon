@@ -8,7 +8,12 @@ from study.study_paper import run
 
 
 def gen_paper_config():
-    return gen_config(datetime(2008, 7, 1), 2*12, 3, 3, 4*5)
+    return gen_config(start_date=datetime(2008, 7, 1),
+                      training_months=2*12,
+                      validation_months=3,
+                      test_months=3,
+                      runs=4*6,
+                      repeats=50)
 
 
 def gen_one_config():
@@ -34,8 +39,8 @@ def gen_config(start_date, training_months, validation_months, test_months, runs
 
 def run_study():
 
-    # config = gen_paper_config()
-    config = gen_one_config()
+    config = gen_paper_config()
+    #config = gen_one_config()
 
     study_number = datetime.now().strftime('%Y%m%d_%H%M%S')
 

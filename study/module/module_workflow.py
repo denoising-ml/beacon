@@ -39,6 +39,10 @@ class StudyFilenames:
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
 
+        self.model_store = self.root + '/model_store'
+        if not os.path.exists(self.model_store):
+            os.makedirs(self.model_store)
+
         self.config = self.get_filename('train', 'config', 'json')
 
         self.train_dates = self.get_train_filename('dates')
@@ -283,7 +287,8 @@ def run_sae(_config, _filenames):
                                                  test_decoder_file=_filenames.test_sae_decoder,
                                                  loss_plot_file=_filenames.sae_loss_plot,
                                                  tensorboard_dir=_filenames.tensorboard_sae,
-                                                 chart_dir=_filenames.chart_sae)
+                                                 chart_dir=_filenames.chart_sae,
+                                                 model_store_dir=_filenames.model_store)
 
     # save model
     autoencoder.save(_filenames.model_autoencoder)
@@ -345,7 +350,8 @@ def run_lstm(_config, _filenames):
                                    test_in_file=_filenames.test_lstm_input,
                                    test_expected_file=_filenames.test_lstm_label,
                                    test_predicted_file=_filenames.test_lstm_predict,
-                                   tensorboard_dir=_filenames.tensorboard_lstm)
+                                   tensorboard_dir=_filenames.tensorboard_lstm,
+                                   model_store_dir=_filenames.model_store)
 
     # save model
     model.save(_filenames.model_lstm)
